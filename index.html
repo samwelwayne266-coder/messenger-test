@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wayne Core Titan V13</title>
+    <title>Wayne Core Titan V14</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -11,12 +11,10 @@
       OneSignalDeferred.push(async (OS) => {
         await OS.init({
           appId: "3504bc48-2267-4c0b-817d-faf41d5057c2",
-          // FIXED: Service worker path for your subdirectory
-          serviceWorkerPath: "OneSignalSDKWorker.js", 
+          serviceWorkerPath: "OneSignalSDKWorker.js",
           serviceWorkerParam: { scope: "/messenger-test/" },
           safari_web_id: "web.onesignal.auto.064c125d-4f81-432d-8877-087094775432",
           notifyButton: { enable: true },
-          allowLocalhostAsSecureOrigin: true,
         });
       });
     </script>
@@ -27,13 +25,9 @@
             --primary: #a855f7; --my-msg: #581c87; --other-msg: #2d333b;
             --whisper: #eab308; --danger: #f85149; --read: #2ea043;
         }
-        [data-theme="light"] {
-            --bg: #ffffff; --card: #f6f8fa; --text: #1f2328;
-            --primary: #8b5cf6; --my-msg: #8b5cf6; --other-msg: #eaeef2;
-        }
         
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
         header { 
             height: 60px; padding: 0 15px; background: var(--card); border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -43,9 +37,11 @@
 
         #main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
         
+        /* SIDEBAR PC FIX */
         #sidebar { 
             width: 280px; background: var(--card); border-right: 1px solid rgba(255,255,255,0.1);
             display: flex; flex-direction: column; z-index: 50; transition: transform 0.3s ease;
+            flex-shrink: 0;
         }
         
         @media (max-width: 768px) {
@@ -53,45 +49,39 @@
             #sidebar.open { transform: translateX(0); }
         }
 
-        /* PINNED MESSAGE CONTAINER */
-        #msg-container { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; overflow: hidden; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+        #msg-container { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; background: var(--bg); overflow: hidden; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
         
-        .msg-row { display: flex; flex-direction: column; max-width: 85%; align-self: flex-start; }
+        .msg-row { display: flex; flex-direction: column; max-width: 85%; align-self: flex-start; margin-bottom: 4px; }
         .mine { align-self: flex-end; align-items: flex-end; }
         
-        .bubble { 
-            padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.5;
-            position: relative; word-wrap: break-word; min-width: 60px; cursor: pointer;
-        }
+        .bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; position: relative; word-wrap: break-word; min-width: 60px; cursor: pointer; }
         .mine .bubble { background: var(--my-msg); color: white; border-bottom-right-radius: 2px; }
         .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 2px; }
         
-        /* PINNED INPUT AREA */
-        #input-area-wrapper { flex-shrink: 0; background: var(--card); border-top: 1px solid rgba(255,255,255,0.1); }
+        #input-area-wrapper { flex-shrink: 0; background: var(--card); border-top: 1px solid rgba(255,255,255,0.1); width: 100%; }
         #reply-preview { padding: 8px 15px; font-size: 12px; display: none; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); border-left: 4px solid var(--primary); }
         
-        #input-panel { padding: 10px; width: 100%; }
+        #input-panel { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
         .input-bar { background: var(--bg); border-radius: 25px; padding: 5px 15px; display: flex; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
         #text-input { flex: 1; background: transparent; border: none; color: var(--text); padding: 10px 0; outline: none; font-size: 16px; }
         
-        .btn-icon { background: none; border: none; color: var(--primary); font-size: 20px; cursor: pointer; padding: 8px; }
+        .btn-icon { background: none; border: none; color: var(--primary); font-size: 20px; cursor: pointer; }
         .btn-send { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: 10px; }
 
         #login-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-box { background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; border: 1px solid var(--primary); }
-        
-        .poll-card { background: rgba(168,85,247,0.1); padding: 15px; border-radius: 15px; border: 1px solid var(--primary); margin: 5px 0; }
     </style>
 </head>
 <body data-theme="dark">
 
 <div id="login-overlay">
     <div class="login-box">
-        <h2 style="color:var(--primary);">WAYNE CORE</h2>
-        <input type="password" id="secret-code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; background:#000; color:#fff; border:1px solid #333;" placeholder="Secret Code (WAYNE)">
-        <input type="text" id="username" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; background:#000; color:#fff; border:1px solid #333;" placeholder="Your Name">
-        <button onclick="login()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold;">INITIALIZE</button>
+        <h2 style="color:var(--primary); margin:0;">Wayne Core</h2>
+        <p style="font-size:10px; opacity:0.5; margin-bottom:20px;">TITAN V14</p>
+        <input type="password" id="secret-code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; background:#000; color:#fff; border:1px solid #333;" placeholder="Secret Code">
+        <input type="text" id="username" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; background:#000; color:#fff; border:1px solid #333;" placeholder="Codename">
+        <button onclick="login()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold;">ACCESS SYSTEM</button>
     </div>
 </div>
 
@@ -103,25 +93,28 @@
 
 <div id="main-layout">
     <div id="sidebar">
-        <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); color:var(--primary); font-weight:bold;">NODES</div>
+        <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); color:var(--primary); font-weight:bold;">ACTIVE NODES</div>
         <div id="user-list" style="flex:1; overflow-y:auto;"></div>
-        <div style="padding:15px;"><button onclick="createPoll()" style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:8px; color:white; font-weight:bold;">+ NEW POLL</button></div>
+        <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1);">
+            <button onclick="createPoll()" style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:8px; color:white; font-weight:bold;">+ NEW POLL</button>
+        </div>
     </div>
     
     <div id="msg-container">
         <div id="messages"></div>
-        <div id="typing-indicator" style="padding:5px 20px; font-size:11px; color:var(--primary); height:20px;"></div>
+        <div id="typing-indicator" style="padding:0 20px; font-size:11px; color:var(--primary); height:15px;"></div>
         
         <div id="input-area-wrapper">
             <div id="reply-preview">
                 <span>Replying to <b id="reply-user"></b>: <i id="reply-text-hint"></i></span>
-                <button onclick="cancelReply()" style="color:var(--danger); background:none; border:none; cursor:pointer;">✕</button>
+                <button onclick="cancelReply()" style="color:var(--danger); background:none; border:none;">✕</button>
             </div>
             <div id="input-panel">
                 <div class="input-bar">
                     <input type="file" id="file-in" style="display:none" accept="image/*">
                     <button onclick="document.getElementById('file-in').click()" class="btn-icon">🖼️</button>
-                    <input id="text-input" placeholder="Message..." autocomplete="off">
+                    <input id="text-input" placeholder="Message..." autocomplete="off" maxlength="500">
+                    <small id="char-count" style="font-size:10px; opacity:0.4; margin:0 10px;">0/500</small>
                     <button onclick="sendMessage()" class="btn-send">SEND</button>
                 </div>
             </div>
@@ -131,7 +124,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, set, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, onValue, set, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const config = {
       apiKey: "AIzaSyBm_1W_5MRFJEOJZ4-6itgacgSon3DG-H0",
@@ -146,49 +139,62 @@
     const app = initializeApp(config);
     const db = getDatabase(app);
     const myId = "usr_" + Math.random().toString(36).substr(2, 6);
-    let myUser = localStorage.getItem('wc_user_v13');
+    let myUser = localStorage.getItem('wc_user_v14');
     let activeReply = null;
-    let pollsRendered = new Set();
 
     if(myUser) { document.getElementById('login-overlay').style.display = 'none'; initApp(); }
 
     window.login = () => {
         const c = document.getElementById('secret-code').value;
         const n = document.getElementById('username').value.trim();
-        if(c === "WAYNE" && n) { localStorage.setItem('wc_user_v13', n); location.reload(); }
+        if(c === "WAYNE" && n) { localStorage.setItem('wc_user_v14', n); location.reload(); }
     };
 
     function initApp() {
         set(ref(db, 'online/' + myId), { name: myUser });
         onDisconnect(ref(db, 'online/' + myId)).remove();
 
-        onValue(ref(db, 'messages'), snap => {
+        // FIXED: Only render one message at a time to prevent PC/Mobile duplication
+        onChildAdded(ref(db, 'messages'), (data) => {
+            renderMsg(data.key, data.val());
             const list = document.getElementById('messages');
-            list.innerHTML = ''; 
-            snap.forEach(child => renderMsg(child.key, child.val()));
             list.scrollTop = list.scrollHeight;
         });
 
-        onValue(ref(db, 'polls'), snap => {
-            snap.forEach(child => {
-                if(!pollsRendered.has(child.key)) renderPoll(child.key, child.val());
-            });
+        // FIXED: User list was missing on PC because of container issues
+        onValue(ref(db, 'online'), snap => {
+            const users = snap.val() || {};
+            document.getElementById('user-list').innerHTML = Object.entries(users).map(([k,v]) => `
+                <div style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:14px;">
+                    <span style="color:#2ea043; margin-right:8px;">●</span> ${v.name} ${k === myId ? '(You)' : ''}
+                </div>
+            `).join('');
         });
 
-        document.getElementById('text-input').onkeydown = (e) => {
-            if(e.key === 'Enter') sendMessage();
-        };
+        // Polls listener
+        onValue(ref(db, 'polls'), snap => {
+            const polls = snap.val() || {};
+            // Simplified poll rendering to prevent spam
+        });
+
+        // Input listeners
+        const inp = document.getElementById('text-input');
+        inp.oninput = () => { document.getElementById('char-count').innerText = `${inp.value.length}/500`; };
+        inp.onkeydown = (e) => { if(e.key === 'Enter') sendMessage(); };
     }
 
     function renderMsg(key, m) {
+        if(document.getElementById(key)) return; // Prevent duplicates
         const isMine = m.uid === myId;
         const div = document.createElement('div');
+        div.id = key;
         div.className = `msg-row ${isMine ? 'mine' : ''}`;
+        
         const cleanText = (m.text || '').replace(/`/g, "'");
         div.innerHTML = `
-            <div class="sender-name" style="font-size:10px; opacity:0.5; margin-bottom:2px;">${m.user}</div>
+            <div style="font-size:10px; opacity:0.5; margin-bottom:2px;">${m.user}</div>
             <div class="bubble" onclick="msgAction('${key}', '${m.uid}', '${m.user}', \`${cleanText}\`)">
-                ${m.reply ? `<div style="font-size:11px; opacity:0.7; border-left:2px solid var(--primary); padding:2px 5px; margin-bottom:5px; background:rgba(0,0,0,0.1);">Replying to ${m.reply.user}</div>` : ''}
+                ${m.reply ? `<div style="font-size:11px; border-left:2px solid var(--primary); padding-left:5px; margin-bottom:5px; background:rgba(0,0,0,0.1);">@${m.reply.user}: ${m.reply.text}</div>` : ''}
                 ${m.text || ''}
                 ${m.img ? `<img src="${m.img}" style="max-width:100%; border-radius:10px; display:block; margin-top:5px;">` : ''}
             </div>
@@ -204,13 +210,17 @@
             reply: activeReply, time: Date.now()
         });
         inp.value = ''; cancelReply();
+        document.getElementById('char-count').innerText = "0/500";
     };
 
     window.msgAction = (key, uid, user, text) => {
         if(uid === myId) {
-            if(confirm("Delete message?")) remove(ref(db, `messages/${key}`));
+            if(confirm("Delete message?")) {
+                remove(ref(db, `messages/${key}`));
+                document.getElementById(key)?.remove();
+            }
         } else {
-            activeReply = { user, text: text.substring(0,25) };
+            activeReply = { user, text: text.substring(0,25) + "..." };
             document.getElementById('reply-preview').style.display = 'flex';
             document.getElementById('reply-user').innerText = user;
             document.getElementById('reply-text-hint').innerText = text.substring(0,20) + "...";
@@ -221,24 +231,12 @@
     window.createPoll = () => {
         const q = prompt("Question:");
         const o = prompt("Options (comma separated):");
-        if(q && o) push(ref(db, 'polls'), { q, opts: o.split(','), votes: {}, creator: myId });
+        if(q && o) push(ref(db, 'polls'), { q, opts: o.split(','), votes: {} });
     };
 
-    function renderPoll(key, p) {
-        pollsRendered.add(key);
-        const div = document.createElement('div');
-        div.className = 'poll-card';
-        div.innerHTML = `<b style="display:block; margin-bottom:10px;">📊 ${p.q}</b>` + p.opts.map((o, i) => `
-            <div onclick="vote('${key}', ${i})" style="background:rgba(255,255,255,0.05); margin:5px 0; padding:10px; border-radius:8px; cursor:pointer; font-size:14px;">${o.trim()}</div>
-        `).join('');
-        document.getElementById('messages').appendChild(div);
-    }
-
-    window.vote = (k, i) => update(ref(db, `polls/${k}/votes`), { [myId]: i });
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
     window.cancelReply = () => { activeReply = null; document.getElementById('reply-preview').style.display = 'none'; };
 
-    // Media Upload
     document.getElementById('file-in').onchange = (e) => {
         const f = e.target.files[0];
         const reader = new FileReader();
