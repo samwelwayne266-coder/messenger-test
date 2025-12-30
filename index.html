@@ -69,11 +69,19 @@
         .recording { color: var(--danger); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* POLL MOBILE FIX */
-        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 12px; padding: 12px; width: 280px; margin: 5px 0; }
-        .poll-opt { position: relative; background: rgba(255,255,255,0.08); margin: 8px 0; border-radius: 8px; cursor: pointer; overflow: hidden; height: 40px; display: flex; align-items: center; padding: 0 12px; font-size: 13px; }
-        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.4; transition: width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); z-index: 1; }
-        .poll-text { position: relative; z-index: 2; display: flex; justify-content: space-between; width: 100%; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        /* FIXED POLLS FOR MOBILE */
+        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 15px; padding: 15px; width: 100%; max-width: 300px; margin: 5px 0; }
+        .poll-opt { 
+            position: relative; background: rgba(255,255,255,0.08); margin: 10px 0; border-radius: 10px; 
+            cursor: pointer; overflow: hidden; height: 42px; display: flex; align-items: center; 
+            padding: 0 15px; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .poll-bar { 
+            position: absolute; left: 0; top: 0; bottom: 0; 
+            background: rgba(168, 85, 247, 0.5); /* Semi-transparent Primary */
+            transition: width 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67); z-index: 1; 
+        }
+        .poll-text { position: relative; z-index: 2; display: flex; justify-content: space-between; width: 100%; color: #fff; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -103,8 +111,8 @@
         <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); color:var(--primary); font-weight:bold; font-size:12px;">ACTIVE NODES</div>
         <div id="user-list" style="flex:1; overflow-y:auto;"></div>
         <div style="padding:15px; display:flex; flex-direction:column; gap:8px;">
-            <button onclick="createPoll()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; font-size:11px;">+ NEW POLL</button>
-            <button onclick="wipeSystem()" style="width:100%; padding:10px; background:var(--danger); color:white; border:none; border-radius:8px; font-weight:bold; font-size:11px;">WIPE SYSTEM</button>
+            <button onclick="createPoll()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; font-size:11px;">+ NEW POLL</button>
+            <button onclick="wipeSystem()" style="width:100%; padding:12px; background:var(--danger); color:white; border:none; border-radius:8px; font-weight:bold; font-size:11px;">WIPE SYSTEM</button>
         </div>
     </div>
     
@@ -165,7 +173,7 @@
         onValue(ref(db, 'online'), snap => {
             const users = snap.val() || {};
             document.getElementById('user-list').innerHTML = Object.entries(users).map(([k,v]) => `
-                <div onclick="startWhisper('${k}', '${v.name}')" style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer;">
+                <div onclick="startWhisper('${k}', '${v.name}')" style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; font-size:14px;">
                     <span style="color:#2ea043;">●</span> ${v.name} ${k === myId ? '(You)' : ''}
                 </div>
             `).join('');
@@ -181,18 +189,17 @@
         const isMine = m.uid === myId;
         const div = document.createElement('div');
         div.className = `msg-row ${isMine ? 'mine' : 'theirs'}`;
-        div.id = `msg-${key}`;
         
         let bubbleClass = `bubble ${m.whisper ? 'whisper-active' : ''}`;
         let content = '';
 
         if(m.type === 'poll') {
-            content = `<div class="poll-card">
-                        <b style="font-size:14px;">📊 ${m.q}</b>
+            content = `<div class="poll-card" id="poll-${key}">
+                        <div style="font-size:12px; opacity:0.6; margin-bottom:5px;">Poll by ${m.user}</div>
+                        <b style="font-size:15px; display:block; margin-bottom:10px;">📊 ${m.q}</b>
                         <div id="opts-${key}">${renderPollOptions(key, m)}</div>
                        </div>`;
             
-            // Real-time listener for the vote bars
             onValue(ref(db, `messages/${key}/votes`), () => {
                 const optBox = document.getElementById(`opts-${key}`);
                 if(optBox) {
@@ -258,11 +265,11 @@
     window.createPoll = () => {
         const q = prompt("Question:");
         const o = prompt("Options (comma separated):");
-        if(q && o) push(ref(db, 'messages'), { type: 'poll', q, opts: o.split(','), uid: myId, votes: {} });
+        if(q && o) push(ref(db, 'messages'), { type: 'poll', q, opts: o.split(','), uid: myId, user: myUser, votes: {} });
     };
 
     window.wipeSystem = () => {
-        if(prompt("ENTER OVERRIDE CODE:") === "WAYNE") {
+        if(prompt("OVERRIDE CODE:") === "WAYNE") {
             remove(ref(db, 'messages'));
             location.reload();
         }
