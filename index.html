@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wayne Core Titan V17</title>
+    <title>Wayne Core Titan V18</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -69,8 +69,12 @@
         .recording { color: var(--danger); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 12px; padding: 15px; width: 260px; }
-        .poll-opt { background: rgba(255,255,255,0.05); padding: 8px; margin: 5px 0; border-radius: 6px; cursor: pointer; text-align: center; }
+        /* POLL RESULTS CSS */
+        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 12px; padding: 15px; width: 280px; margin: 5px 0; }
+        .poll-opt { position: relative; background: rgba(255,255,255,0.05); margin: 8px 0; border-radius: 8px; cursor: pointer; overflow: hidden; height: 35px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; border: 1px solid transparent; }
+        .poll-opt:hover { border-color: var(--primary); }
+        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: rgba(168, 85, 247, 0.3); transition: width 0.5s ease; z-index: 0; }
+        .poll-text { position: relative; z-index: 1; display: flex; justify-content: space-between; width: 100%; }
     </style>
 </head>
 <body>
@@ -121,7 +125,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, onValue, set, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const config = {
       apiKey: "AIzaSyBm_1W_5MRFJEOJZ4-6itgacgSon3DG-H0",
@@ -173,18 +177,31 @@
     }
 
     function renderMsg(key, m) {
-        // Logic: Only show if public OR if I am the sender/receiver of the whisper
         if(m.whisper && m.whisper !== myId && m.uid !== myId) return;
 
         const isMine = m.uid === myId;
         const div = document.createElement('div');
         div.className = `msg-row ${isMine ? 'mine' : 'theirs'}`;
+        div.id = `msg-${key}`;
         
         let bubbleClass = `bubble ${m.whisper ? 'whisper-active' : ''}`;
         let content = '';
 
         if(m.type === 'poll') {
-            content = `<div class="poll-card"><b>📊 ${m.q}</b>${m.opts.map(o => `<div class="poll-opt">${o}</div>`).join('')}</div>`;
+            content = `<div class="poll-card" id="poll-${key}">
+                        <b>📊 ${m.q}</b>
+                        <div id="opts-${key}">${renderPollOptions(key, m)}</div>
+                       </div>`;
+            
+            // Re-render poll on vote change
+            onValue(ref(db, `messages/${key}/votes`), () => {
+                const optBox = document.getElementById(`opts-${key}`);
+                if(optBox) {
+                    onValue(ref(db, `messages/${key}`), s => {
+                        optBox.innerHTML = renderPollOptions(key, s.val());
+                    }, { onlyOnce: true });
+                }
+            });
         } else if(m.audio) {
             content = `<div class="${bubbleClass}"><audio controls src="${m.audio}" style="width:180px; height:30px;"></audio></div>`;
         } else if(m.img) {
@@ -197,6 +214,27 @@
         div.innerHTML = content;
         document.getElementById('messages').appendChild(div);
     }
+
+    function renderPollOptions(pollKey, pollData) {
+        const votes = pollData.votes || {};
+        const total = Object.keys(votes).length;
+        return pollData.opts.map((opt, idx) => {
+            const count = Object.values(votes).filter(v => v === idx).length;
+            const pct = total === 0 ? 0 : Math.round((count / total) * 100);
+            return `
+                <div class="poll-opt" onclick="vote('${pollKey}', ${idx})">
+                    <div class="poll-bar" style="width: ${pct}%"></div>
+                    <div class="poll-text">
+                        <span>${opt}</span>
+                        <span>${pct}%</span>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    window.vote = (key, idx) => {
+        set(ref(db, `messages/${key}/votes/${myId}`), idx);
+    };
 
     window.sendMessage = () => {
         const inp = document.getElementById('text-input');
@@ -221,7 +259,7 @@
     window.createPoll = () => {
         const q = prompt("Question:");
         const o = prompt("Options (comma separated):");
-        if(q && o) push(ref(db, 'messages'), { type: 'poll', q, opts: o.split(','), uid: myId });
+        if(q && o) push(ref(db, 'messages'), { type: 'poll', q, opts: o.split(','), uid: myId, votes: {} });
     };
 
     window.wipeSystem = () => {
@@ -233,7 +271,6 @@
 
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
 
-    // Image Upload
     document.getElementById('img-in').onchange = (e) => {
         const f = e.target.files[0];
         const reader = new FileReader();
