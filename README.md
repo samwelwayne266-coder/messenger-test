@@ -1,10 +1,6 @@
 # 🌌 Wayne Core
 
 <p align="center">
-  <img src="https://cdn-icons-png.flaticon.com/512/940/940193.png" width="100" height="100" />
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/Status-Active-a855f7?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Secure-Encrypted-yellow?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Platform-PWA-blue?style=for-the-badge" />
@@ -28,6 +24,10 @@ For the best experience on Windows, download the standalone executable.
 1. Navigate to the [Live Link](https://samwelwayne266.github.io/Wayne-Core/)
 2. Enter the Secret Code: `WAYNE`
 3. **Mobile Users:** Select "Add to Home Screen" to install the native icon.
+
+#### Method 3: Access Through Web
+
+Navigate to the [Live Link](https://samwelwayne266.github.io/Wayne-Core/)
 
 ---
 
