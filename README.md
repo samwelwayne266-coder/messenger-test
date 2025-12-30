@@ -21,6 +21,7 @@
 For the best experience on Windows, download the standalone executable.
 > [!IMPORTANT]
 > **[Download Wayne-Core.exe](https://github.com/samwelwayne266/Wayne-Core/releases/latest)**
+> 
 > *Go to the Releases page, grab the latest `.exe`, and run it.*
 
 #### Method 2: The Web Node (PWA)
