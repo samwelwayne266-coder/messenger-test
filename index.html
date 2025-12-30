@@ -156,7 +156,7 @@
     window.requestNotify = async () => {
         const permission = await Notification.requestPermission();
         if(permission === 'granted') {
-            const token = await getToken(messaging, { vapidKey: 'YOUR_PUBLIC_VAPID_KEY' });
+            const token = await getToken(messaging, { vapidKey: 'BIuY2s439LjkSrsCNNb8CJAfsJDSinl21OctnAtn_sSXl6J6Q--FxwPaC8jFYKW-HJMKfqvmuymGEEdRaAy2H1E' });
             console.log("Token:", token);
             alert("Notifications Active!");
         }
@@ -294,3 +294,4 @@
 </script>
 </body>
 </html>
+
