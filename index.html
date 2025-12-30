@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-    <title>Wayne Core Omni-God V10</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Wayne Core Mobile God</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -13,138 +13,139 @@
 
     <style>
         :root {
-            --bg: #0b0e14; --card: #1c2128; --text: #adbac7;
-            --primary: #a855f7; --my-msg: #3e334a; --other-msg: #22272e;
-            --whisper: #eab308; --danger: #f85149; --read: #3fb950;
+            --bg: #0b0e14; --card: #1c2128; --text: #e6edf3;
+            --primary: #a855f7; --my-msg: #581c87; --other-msg: #2d333b;
+            --whisper: #eab308; --danger: #f85149; --read: #2ea043;
         }
         [data-theme="light"] {
-            --bg: #f4f4f5; --card: #ffffff; --text: #09090b;
-            --primary: #7c3aed; --my-msg: #7c3aed; --other-msg: #e4e4e7;
-            --my-text: white;
+            --bg: #ffffff; --card: #f6f8fa; --text: #1f2328;
+            --primary: #8b5cf6; --my-msg: #8b5cf6; --other-msg: #eaeef2;
         }
+        
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* --- UI COMPONENTS --- */
+        /* --- HEADER --- */
         header { 
-            padding: 12px 16px; background: var(--card); border-bottom: 1px solid #444c56;
-            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            height: 60px; padding: 0 15px; background: var(--card); border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-between; align-items: center; z-index: 100; flex-shrink: 0;
+        }
+        .brand { font-weight: 900; letter-spacing: 1px; color: var(--primary); font-size: 1.1rem; }
+
+        /* --- LAYOUT --- */
+        #main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
+        
+        /* SIDEBAR (Desktop vs Mobile) */
+        #sidebar { 
+            width: 280px; background: var(--card); border-right: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; z-index: 50; transition: transform 0.3s ease;
         }
         
-        #sidebar { 
-            width: 260px; background: var(--card); border-right: 1px solid #444c56;
-            position: absolute; left: -260px; height: 100%; transition: 0.3s; z-index: 50; display: flex; flex-direction: column;
+        /* MOBILE STYLES */
+        @media (max-width: 768px) {
+            #sidebar { position: absolute; top: 0; bottom: 0; left: 0; width: 85%; transform: translateX(-100%); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
+            #sidebar.open { transform: translateX(0); }
+            .bubble { font-size: 16px !important; padding: 12px 16px !important; }
+            .btn-icon { font-size: 24px !important; padding: 10px !important; }
         }
-        #sidebar.open { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
 
-        #msg-container { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-
-        /* --- BUBBLES & CONTENT --- */
-        .msg-row { display: flex; gap: 8px; max-width: 85%; align-self: flex-start; animation: fadeIn 0.2s; }
-        .mine { align-self: flex-end; flex-direction: row-reverse; }
+        /* MESSAGE AREA */
+        #msg-container { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        
+        .msg-row { display: flex; flex-direction: column; max-width: 85%; align-self: flex-start; }
+        .mine { align-self: flex-end; align-items: flex-end; }
         
         .bubble { 
-            padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4;
-            position: relative; word-wrap: break-word; cursor: pointer; min-width: 60px;
+            padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.5;
+            position: relative; word-wrap: break-word; min-width: 60px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .mine .bubble { background: var(--my-msg); color: var(--my-text, #fff); border-bottom-right-radius: 4px; }
-        .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 4px; border: 1px solid #444c56; }
+        .mine .bubble { background: var(--my-msg); color: white; border-bottom-right-radius: 2px; }
+        .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 2px; }
         
-        .reply-box { 
-            background: rgba(0,0,0,0.2); border-left: 3px solid var(--primary); 
-            padding: 4px 8px; margin-bottom: 6px; font-size: 11px; border-radius: 4px; opacity: 0.8;
-        }
+        .sender-name { font-size: 10px; opacity: 0.6; margin-bottom: 2px; margin-left: 5px; }
+        .mine .sender-name { display: none; } /* Hide my own name */
+
+        .meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 10px; opacity: 0.7; margin-top: 4px; }
+        .seen { color: var(--read); font-weight: bold; }
         
-        .bubble img { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
-        audio { height: 32px; max-width: 200px; margin-top: 5px; }
+        /* MEDIA */
+        img.chat-img { max-width: 100%; border-radius: 12px; margin-top: 5px; display: block; }
+        audio { height: 40px; width: 100%; margin-top: 5px; border-radius: 20px; }
 
-        /* --- METADATA (Time + Read Receipts) --- */
-        .meta { 
-            display: flex; justify-content: flex-end; align-items: center; gap: 4px; 
-            font-size: 9px; opacity: 0.6; margin-top: 4px; 
-        }
-        .read-icon { font-size: 11px; font-weight: bold; }
-        .read-icon.seen { color: var(--read); }
-
-        /* --- REACTIONS --- */
-        .reactions { 
-            position: absolute; bottom: -12px; right: 0; 
-            background: var(--card); border: 1px solid #444c56; 
-            border-radius: 10px; padding: 2px 6px; font-size: 10px; display: flex; gap: 2px;
-        }
-
-        /* --- POLLS --- */
-        .poll-card { background: rgba(168, 85, 247, 0.1); border: 1px solid var(--primary); padding: 12px; border-radius: 12px; width: 100%; margin-bottom: 10px; }
-        .poll-opt { background: rgba(255,255,255,0.05); padding: 8px; margin: 5px 0; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; }
-        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.3; transition: 0.5s; }
-
-        /* --- INPUT AREA --- */
-        #input-panel { padding: 10px; background: var(--card); border-top: 1px solid #444c56; }
-        .input-wrapper { background: var(--bg); border-radius: 24px; padding: 4px 8px; display: flex; align-items: center; border: 1px solid #444c56; }
-        #text-input { flex: 1; background: transparent; border: none; color: var(--text); padding: 10px; outline: none; font-size: 16px; }
-        .action-bar { display: none; background: #2d333b; padding: 8px 15px; border-top: 1px solid var(--primary); justify-content: space-between; font-size: 12px; }
+        /* INPUT AREA */
+        #input-panel { padding: 10px; background: var(--card); border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .input-bar { background: var(--bg); border-radius: 25px; padding: 5px 5px 5px 15px; display: flex; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
+        #text-input { flex: 1; background: transparent; border: none; color: var(--text); padding: 10px 0; outline: none; font-size: 16px; min-width: 0; }
+        .btn-icon { background: none; border: none; color: var(--primary); font-size: 20px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         
-        /* --- LOGIN & UTILS --- */
-        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--primary); width: 85%; max-width: 320px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* OVERLAYS */
+        #reply-preview, #whisper-preview { padding: 8px 15px; font-size: 12px; display: none; justify-content: space-between; align-items: center; background: #222; border-top: 1px solid var(--primary); }
+        
+        /* LOGIN */
+        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; border: 1px solid var(--primary); }
+        input.login-field { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #333; background: var(--bg); color: white; text-align: center; font-size: 16px; }
+
+        /* POLLS */
+        .poll-card { background: rgba(168,85,247,0.15); padding: 15px; border-radius: 15px; border: 1px solid var(--primary); margin-bottom: 10px; }
+        .poll-opt { background: rgba(0,0,0,0.2); padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; position: relative; overflow: hidden; }
+        .poll-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--primary); opacity: 0.3; transition: 0.3s; }
+        .poll-text { position: relative; z-index: 2; display: flex; justify-content: space-between; font-size: 14px; }
     </style>
 </head>
 <body data-theme="dark">
 
 <div id="login-overlay">
     <div class="login-box">
-        <h2 style="color:var(--primary); margin:0 0 5px 0;">WAYNE CORE</h2>
-        <small style="opacity:0.5; display:block; margin-bottom:20px;">OMNI-GOD V10</small>
-        <input type="password" id="secret-code" placeholder="Secret Code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:none; background:#0b0e14; color:white; text-align:center;">
-        <input type="text" id="username" placeholder="Codename" maxlength="12" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; border:none; background:#0b0e14; color:white; text-align:center;">
-        <button onclick="login()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold;">INITIALIZE</button>
+        <h2 style="color:var(--primary); margin-top:0;">WAYNE CORE</h2>
+        <input type="password" id="secret-code" class="login-field" placeholder="Secret Code (WAYNE)">
+        <input type="text" id="username" class="login-field" placeholder="Your Name" maxlength="15">
+        <button onclick="login()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold; font-size:16px;">ENTER SYSTEM</button>
     </div>
 </div>
 
 <header>
-    <div style="display:flex; align-items:center; gap:12px;">
-        <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:none; color:var(--text); font-size:22px;">☰</button>
-        <b style="letter-spacing:1px;">WAYNE CORE</b>
-        <div id="status-dot" style="width:8px; height:8px; background:#3fb950; border-radius:50%; box-shadow: 0 0 8px #3fb950;"></div>
-    </div>
+    <button onclick="toggleSidebar()" class="btn-icon">☰</button>
+    <div class="brand">WAYNE CORE</div>
     <div style="display:flex; gap:10px;">
-        <button onclick="toggleTheme()" style="background:none; border:1px solid #444c56; color:var(--text); padding:4px 8px; border-radius:6px; font-size:10px;">🌓</button>
-        <button onclick="purgeChat()" style="background:var(--danger); border:none; color:white; padding:4px 8px; border-radius:6px; font-size:10px; font-weight:bold;">PURGE</button>
+        <div id="status-dot" style="width:10px; height:10px; background:#2ea043; border-radius:50%; box-shadow:0 0 10px #2ea043;"></div>
+        <button onclick="purgeChat()" style="background:var(--danger); color:white; border:none; border-radius:4px; font-size:10px; padding:5px; font-weight:bold;">RESET</button>
     </div>
 </header>
 
 <div id="main-layout">
     <div id="sidebar">
-        <div style="padding:15px; font-weight:bold; color:var(--primary); border-bottom:1px solid #444c56;">ACTIVE NODES</div>
+        <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); color:var(--primary); font-weight:bold;">ACTIVE NODES</div>
         <div id="user-list" style="flex:1; overflow-y:auto;"></div>
-        <button onclick="createPoll()" style="margin:10px; padding:10px; background:rgba(168,85,247,0.2); border:1px solid var(--primary); color:var(--primary); border-radius:8px;">+ CREATE POLL</button>
+        <div style="padding:15px; display:flex; gap:10px; flex-direction:column;">
+            <button onclick="createPoll()" style="padding:12px; background:transparent; border:1px solid var(--primary); color:var(--primary); border-radius:10px;">+ NEW POLL</button>
+            <button onclick="toggleTheme()" style="padding:12px; background:transparent; border:1px solid #555; color:var(--text); border-radius:10px;">🌓 TOGGLE THEME</button>
+        </div>
     </div>
     
     <div id="msg-container">
         <div id="messages"></div>
-        <div id="typing-indicator" style="padding:0 20px; font-size:10px; height:15px; color:var(--primary); font-style:italic;"></div>
         
-        <div id="reply-preview" class="action-bar">
-            <span>Replying to <b id="reply-user"></b></span>
-            <button onclick="cancelReply()" style="background:none; border:none; color:var(--danger);">✕</button>
+        <div id="typing-indicator" style="padding:5px 20px; font-size:11px; color:var(--primary); height:20px; font-style:italic;"></div>
+        
+        <div id="reply-preview">
+            <span>Replying to <b id="reply-user">...</b></span>
+            <button onclick="cancelReply()" class="btn-icon" style="color:var(--danger); font-size:14px;">✕</button>
         </div>
-        <div id="whisper-preview" class="action-bar" style="background:var(--whisper); color:black;">
+        <div id="whisper-preview" style="background:var(--whisper); color:black;">
             <span id="whisper-info"></span>
-            <button onclick="cancelWhisper()" style="background:none; border:none; color:black;">✕</button>
+            <button onclick="cancelWhisper()" class="btn-icon" style="color:black; font-size:14px;">✕</button>
         </div>
 
         <div id="input-panel">
-            <div class="input-wrapper">
+            <div class="input-bar">
                 <input type="file" id="file-in" style="display:none" accept="image/*">
-                <button onclick="document.getElementById('file-in').click()" style="background:none; border:none; font-size:18px; cursor:pointer;">🖼️</button>
-                <button id="rec-btn" style="background:none; border:none; font-size:18px; cursor:pointer;">🎙️</button>
-                
-                <input id="text-input" placeholder="Secure Message..." autocomplete="off" maxlength="500">
-                <span id="char-counter" style="font-size:10px; color:#666; padding-right:5px;">0/500</span>
-                
-                <button onclick="sendMessage()" style="background:none; border:none; font-size:18px; cursor:pointer;">🚀</button>
+                <button onclick="document.getElementById('file-in').click()" class="btn-icon">🖼️</button>
+                <button id="rec-btn" class="btn-icon">🎙️</button>
+                <input id="text-input" placeholder="Message..." autocomplete="off" maxlength="500">
+                <span id="char-count" style="font-size:10px; opacity:0.5; padding:0 5px; width:40px; text-align:right;">0/500</span>
+                <button onclick="sendMessage()" class="btn-icon" style="color:var(--primary);">🚀</button>
             </div>
         </div>
     </div>
@@ -167,64 +168,66 @@
     const app = initializeApp(config);
     const db = getDatabase(app);
 
-    // --- STATE ---
     const SECRET = "WAYNE";
-    const myId = "node_" + Math.random().toString(36).substr(2, 6);
-    let myUser = localStorage.getItem('wc_omni_user');
+    const myId = "usr_" + Math.random().toString(36).substr(2, 6);
+    let myUser = localStorage.getItem('wc_mobile_user');
     let activeReply = null, whisperTarget = null;
     let mediaRec, audioChunks = [];
 
     if(myUser) {
-        document.getElementById('login-overlay').style.display='none';
+        document.getElementById('login-overlay').style.display = 'none';
         initApp();
     }
 
     window.login = () => {
         const code = document.getElementById('secret-code').value;
-        const user = document.getElementById('username').value.trim();
-        if(code === SECRET && user) {
-            localStorage.setItem('wc_omni_user', user);
+        const name = document.getElementById('username').value.trim();
+        if(code === SECRET && name) {
+            localStorage.setItem('wc_mobile_user', name);
             location.reload();
-        } else { alert("ACCESS DENIED"); }
+        } else { alert("WRONG CODE"); }
     };
 
     function initApp() {
-        // 1. Presence
+        // Presence
         const pRef = ref(db, 'online/' + myId);
         set(pRef, { name: myUser });
         onDisconnect(pRef).remove();
         onValue(ref(db, 'online'), snap => {
-            document.getElementById('user-list').innerHTML = Object.entries(snap.val()||{}).map(([k,v]) => `
-                <div onclick="setWhisper('${k}','${v.name}')" style="padding:10px; cursor:pointer; border-bottom:1px solid #333;">🟢 ${v.name}</div>
+            const users = snap.val() || {};
+            document.getElementById('user-list').innerHTML = Object.entries(users).map(([k,v]) => `
+                <div onclick="setWhisper('${k}','${v.name}')" style="padding:15px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; gap:10px;">
+                    <div style="width:8px; height:8px; background:#2ea043; border-radius:50%;"></div>
+                    ${v.name} ${k===myId ? '(You)' : ''}
+                </div>
             `).join('');
         });
 
-        // 2. Messages & Read Receipts
+        // Messages
         onValue(ref(db, 'messages'), snap => {
             const list = document.getElementById('messages');
             list.innerHTML = '';
             snap.forEach(child => {
                 const m = child.val();
                 if(!m.toId || m.toId === myId || m.uid === myId) {
+                    // Mark read
+                    if(m.uid !== myId && (!m.readBy || !m.readBy[myId])) update(ref(db, `messages/${child.key}/readBy`), { [myId]: true });
                     renderMsg(child.key, m);
-                    // Mark as Read if not mine
-                    if(m.uid !== myId && (!m.readBy || !m.readBy[myId])) {
-                        update(ref(db, `messages/${child.key}/readBy`), { [myId]: true });
-                    }
                 }
             });
-            // 3. Polls
+            // Polls
             onValue(ref(db, 'polls'), pSnap => {
-                pSnap.forEach(pChild => renderPoll(pChild.key, pChild.val()));
+                pSnap.forEach(p => renderPoll(p.key, p.val()));
             });
-            list.scrollTop = list.scrollHeight;
+            // Auto scroll only if near bottom or new message is mine
+            list.scrollTop = list.scrollHeight; 
         });
 
-        // 4. Typing
+        // Typing
         const tRef = ref(db, 'typing/' + myId);
         document.getElementById('text-input').oninput = (e) => {
             const len = e.target.value.length;
-            document.getElementById('char-counter').innerText = len + "/500";
+            document.getElementById('char-count').innerText = len + "/500";
             set(tRef, { name: myUser, active: len > 0 });
             clearTimeout(window.tTime);
             window.tTime = setTimeout(() => set(tRef, { active: false }), 2000);
@@ -235,32 +238,33 @@
         });
     }
 
-    // --- RENDERING ---
     function renderMsg(key, m) {
         const isMine = m.uid === myId;
-        const seenCount = m.readBy ? Object.keys(m.readBy).length : 0;
-        const ticks = seenCount > 0 ? '✓✓' : '✓';
-        const tickClass = seenCount > 0 ? 'read-icon seen' : 'read-icon';
+        const readCount = m.readBy ? Object.keys(m.readBy).length : 0;
         
+        // FIX: Handle missing/invalid dates from old messages
+        let timeStr = "Just now";
+        if(m.time) {
+            try { timeStr = new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } 
+            catch(e) { timeStr = "Unknown"; }
+        }
+
         const div = document.createElement('div');
-        div.className = `msg-row ${isMine ? 'mine' : ''}`;
+        div.className = `msg-row ${isMine ? 'mine' : 'theirs'}`;
         
         let content = m.text || '';
-        if(m.img) content += `<img src="${m.img}">`;
+        if(m.img) content += `<img src="${m.img}" class="chat-img">`;
         if(m.audio) content += `<audio controls src="${m.audio}"></audio>`;
 
         div.innerHTML = `
-            <div class="bubble" onclick="msgClick('${key}', '${m.uid}', '${m.user}', '${m.text||'media'}')">
-                <small style="opacity:0.5; font-size:10px; display:block;">${m.toId ? '🔒 Whisper' : m.user}</small>
-                ${m.reply ? `<div class="reply-box"><b>@${m.reply.user}:</b> ${m.reply.text}</div>` : ''}
-                <div>${content}</div>
-                
+            <div class="sender-name">${m.toId ? '🔒 Whisper' : m.user}</div>
+            <div class="bubble" onclick="msgAction('${key}', '${m.uid}', '${m.user}')">
+                ${m.reply ? `<div style="border-left:2px solid var(--primary); padding-left:5px; font-size:11px; opacity:0.7; margin-bottom:5px;">Replying to ${m.reply.user}</div>` : ''}
+                ${content}
                 <div class="meta">
-                    <span>${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                    ${isMine ? `<span class="${tickClass}">${ticks}</span>` : ''}
+                    <span>${timeStr}</span>
+                    ${isMine ? `<span class="${readCount>0?'seen':''}">${readCount>0 ? '✓✓' : '✓'}</span>` : ''}
                 </div>
-                
-                ${m.reactions ? `<div class="reactions">${Object.keys(m.reactions).join('')}</div>` : ''}
             </div>
         `;
         document.getElementById('messages').appendChild(div);
@@ -270,20 +274,18 @@
         const total = p.votes ? Object.keys(p.votes).length : 0;
         const div = document.createElement('div');
         div.className = 'poll-card';
-        div.innerHTML = `<b style="color:var(--primary)">📊 ${p.q}</b>` + p.opts.map((o, i) => {
-            const count = p.votes ? Object.values(p.votes).filter(v => v === i).length : 0;
-            const pct = total ? Math.round((count/total)*100) : 0;
+        div.innerHTML = `<b style="display:block; margin-bottom:10px;">📊 ${p.q}</b>` + p.opts.map((o, i) => {
+            const c = p.votes ? Object.values(p.votes).filter(v => v === i).length : 0;
+            const pct = total ? Math.round((c/total)*100) : 0;
             return `<div class="poll-opt" onclick="vote('${key}', ${i})">
-                <div class="poll-bar" style="width:${pct}%"></div>
-                <div style="position:relative; z-index:2; display:flex; justify-content:space-between;">
-                    <span>${o}</span><span>${count} (${pct}%)</span>
-                </div>
+                <div class="poll-fill" style="width:${pct}%"></div>
+                <div class="poll-text"><span>${o}</span><span>${pct}%</span></div>
             </div>`;
         }).join('');
         document.getElementById('messages').appendChild(div);
     }
 
-    // --- ACTIONS ---
+    // ACTIONS
     window.sendMessage = () => {
         const inp = document.getElementById('text-input');
         if(inp.value.trim()) {
@@ -296,22 +298,18 @@
         }
     };
 
-    window.msgClick = (key, uid, user, text) => {
+    window.msgAction = (key, uid, user) => {
         if(uid === myId) {
-            if(confirm("Delete message?")) remove(ref(db, `messages/${key}`));
+            if(confirm("Delete this message?")) remove(ref(db, `messages/${key}`));
         } else {
-            if(confirm("Reply or React?\nOK = Reply\nCancel = React")) {
-                activeReply = { user, text: text.substring(0,30)+'...' };
-                document.getElementById('reply-preview').style.display = 'flex';
-                document.getElementById('reply-user').innerText = user;
-            } else {
-                const emo = prompt("Emoji:");
-                if(emo) update(ref(db, `messages/${key}/reactions`), { [emo]: true });
-            }
+            activeReply = { user };
+            document.getElementById('reply-preview').style.display = 'flex';
+            document.getElementById('reply-user').innerText = user;
+            document.getElementById('text-input').focus();
         }
     };
 
-    // --- MEDIA ---
+    // MEDIA
     document.getElementById('file-in').onchange = e => {
         const r = new FileReader();
         r.onload = () => push(ref(db, 'messages'), { img: r.result, user: myUser, uid: myId, time: Date.now() });
@@ -319,37 +317,36 @@
     };
     
     document.getElementById('rec-btn').onclick = async () => {
+        const btn = document.getElementById('rec-btn');
         if(!mediaRec || mediaRec.state === 'inactive') {
-            const s = await navigator.mediaDevices.getUserMedia({audio:true});
-            mediaRec = new MediaRecorder(s);
-            mediaRec.ondataavailable = e => audioChunks.push(e.data);
-            mediaRec.onstop = () => {
-                const b = new Blob(audioChunks);
-                const r = new FileReader();
-                r.onload = () => push(ref(db, 'messages'), { audio: r.result, user: myUser, uid: myId, time: Date.now() });
-                r.readAsDataURL(b); audioChunks=[];
-            };
-            mediaRec.start();
-            document.getElementById('rec-btn').innerText = '🟥';
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({audio:true});
+                mediaRec = new MediaRecorder(s);
+                mediaRec.ondataavailable = e => audioChunks.push(e.data);
+                mediaRec.onstop = () => {
+                    const b = new Blob(audioChunks);
+                    const r = new FileReader();
+                    r.onload = () => push(ref(db, 'messages'), { audio: r.result, user: myUser, uid: myId, time: Date.now() });
+                    r.readAsDataURL(b); audioChunks=[];
+                };
+                mediaRec.start();
+                btn.innerText = '🛑';
+                btn.style.color = 'red';
+            } catch(e) { alert("Mic Access Denied"); }
         } else {
             mediaRec.stop();
-            document.getElementById('rec-btn').innerText = '🎙️';
+            btn.innerText = '🎙️';
+            btn.style.color = 'var(--primary)';
         }
     };
 
-    // --- UTILS ---
+    // UTILS
     window.createPoll = () => {
-        const q = prompt("Poll Question:");
+        const q = prompt("Question:");
         const o = prompt("Options (comma separated):");
         if(q && o) push(ref(db, 'polls'), { q, opts: o.split(','), votes: {} });
     };
     window.vote = (k, i) => update(ref(db, `polls/${k}/votes`), { [myId]: i });
-    
-    window.setWhisper = (id, name) => {
-        whisperTarget = id;
-        document.getElementById('whisper-preview').style.display='flex';
-        document.getElementById('whisper-info').innerText = "🔒 Whispering to " + name;
-    };
     
     async function sendPush(msg) {
         if(whisperTarget) return;
@@ -360,10 +357,12 @@
         }); } catch(e){}
     }
 
+    window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
+    window.setWhisper = (id, name) => { whisperTarget = id; document.getElementById('whisper-preview').style.display='flex'; document.getElementById('whisper-info').innerText = "Whisper to "+name; toggleSidebar(); };
     window.cancelReply = () => { activeReply=null; document.getElementById('reply-preview').style.display='none'; };
     window.cancelWhisper = () => { whisperTarget=null; document.getElementById('whisper-preview').style.display='none'; };
     window.toggleTheme = () => document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark');
-    window.purgeChat = () => { if(confirm("NUKE NETWORK?")) { remove(ref(db, 'messages')); remove(ref(db, 'polls')); } };
+    window.purgeChat = () => { if(confirm("NUKE EVERYTHING?")) { remove(ref(db, 'messages')); remove(ref(db, 'polls')); } };
 </script>
 </body>
 </html>
