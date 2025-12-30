@@ -40,7 +40,7 @@ For the best experience on Windows, download the standalone executable.
 - **📱 PWA Identity:** Custom splash screens and address-bar branding.
 
 ## 👤 Developer
-- **GitHub:** [@samwelwayne266](https://github.com/samwelwayne266)
+- **GitHub:** [Wayneee](https://github.com/samwelwayne266-coder)
 - **Identity:** Wayne Core
 
 ---
