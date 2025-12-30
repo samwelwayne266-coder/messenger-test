@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Wayne Core Supreme Apex</title>
+    <style>
+        :root {
+            --bg: #09090b; --card: #18181b; --text: #fafafa;
+            --primary: #a855f7; --my-msg: #a855f7; --other-msg: #27272a;
+            --whisper: #eab308; --poll-bg: rgba(168, 85, 247, 0.1);
+        }
+        [data-theme="light"] {
+            --bg: #f4f4f5; --card: #ffffff; --text: #09090b;
+            --primary: #7c3aed; --my-msg: #7c3aed; --other-msg: #e4e4e7;
+            --poll-bg: rgba(124, 58, 237, 0.1);
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; padding: 0; height: 100dvh; 
+            background: var(--bg); color: var(--text); 
+            overflow: hidden; display: flex; flex-direction: column;
+        }
+
+        /* CUSTOM SUPREME SCROLLBAR */
+        #messages::-webkit-scrollbar { width: 6px; }
+        #messages::-webkit-scrollbar-track { background: transparent; }
+        #messages::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+        #messages { scrollbar-width: thin; scrollbar-color: var(--primary) transparent; }
+
+        #chat-container { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 1400px; margin: 0 auto; background: var(--card); position: relative; overflow: hidden; }
+
+        header {
+            padding: 15px 20px; background: var(--primary); color: white;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000;
+        }
+
+        #main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+        /* SIDEBAR LOGIC */
+        #sidebar { 
+            width: 280px; background: rgba(0,0,0,0.25); 
+            border-right: 1px solid rgba(255,255,255,0.05); 
+            display: flex; flex-direction: column; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #msg-container { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--bg); overflow: hidden; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+
+        /* BUBBLE & IMAGE BALANCING */
+        .msg-row { display: flex; gap: 12px; margin-bottom: 5px; align-items: flex-end; width: 100%; }
+        .mine { flex-direction: row-reverse; }
+
+        .avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.85rem; flex-shrink: 0; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        
+        .bubble { 
+            max-width: 75%; padding: 12px 16px; border-radius: 20px; font-size: 15px; position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: transform 0.1s; cursor: pointer;
+        }
+        .bubble:active { transform: scale(0.98); }
+        .mine .bubble { background: var(--my-msg); color: white; border-bottom-right-radius: 4px; }
+        .theirs .bubble { background: var(--other-msg); color: var(--text); border-bottom-left-radius: 4px; }
+        .is-whisper { border: 2px dashed var(--whisper); }
+
+        .reply-quote { 
+            background: rgba(0,0,0,0.2); border-left: 3px solid #fff; 
+            padding: 6px 10px; margin-bottom: 8px; border-radius: 6px; font-size: 0.75rem; opacity: 0.8;
+        }
+
+        .bubble img { 
+            max-width: 100%; max-height: 320px; border-radius: 12px; 
+            display: block; margin: 8px 0; object-fit: contain; background: #000;
+        }
+
+        /* POLL UI */
+        .poll-card { background: var(--poll-bg); border: 1px solid var(--primary); padding: 15px; border-radius: 15px; margin: 10px 0; width: 100%; max-width: 300px; }
+        .poll-opt { background: rgba(255,255,255,0.05); padding: 10px; margin: 8px 0; border-radius: 10px; cursor: pointer; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.3; transition: width 0.6s ease; }
+
+        /* INPUT AREA & MOBILE FIX */
+        #input-panel { 
+            padding: 15px; background: var(--card); border-top: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        }
+
+        .preview-bar { display: none; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-bottom: 10px; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); }
+        
+        .toolbar { display: flex; gap: 12px; align-items: center; }
+        #text-input { flex: 1; border: none; padding: 14px 20px; border-radius: 30px; background: var(--bg); color: var(--text); outline: none; font-size: 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .btn-icon { background: none; border: none; color: var(--primary); font-size: 1.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:disabled { opacity: 0.3; }
+
+        /* MOBILE OVERRIDES */
+        @media (max-width: 850px) {
+            #sidebar { position: absolute; left: -280px; z-index: 2000; height: 100%; background: var(--card); }
+            #sidebar.open { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.8); }
+        }
+
+        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 5000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: var(--card); padding: 40px; border-radius: 30px; text-align: center; border: 1px solid var(--primary); width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div id="login-overlay">
+    <div class="login-card">
+        <h1 style="color:var(--primary); margin:0; font-size: 2.5rem;">WAYNE CORE</h1>
+        <p style="opacity:0.5; font-weight:bold; letter-spacing:2px; margin-bottom:30px;">APEX SUPREME V7</p>
+        <input type="text" id="user-input" placeholder="Enter Username..." maxlength="15" style="width:100%; padding:18px; border-radius:15px; border:none; background:#000; color:#fff; text-align:center; font-size:1.2rem; margin-bottom:20px;">
+        <button onclick="login()" style="width:100%; padding:18px; background:var(--primary); color:white; border:none; border-radius:15px; font-weight:bold; cursor:pointer; font-size:1rem;">JOIN NETWORK</button>
+    </div>
+</div>
+
+<div id="chat-container">
+    <header>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">☰</button>
+            <span style="font-weight:900; letter-spacing:1px;">WAYNE CORE</span>
+        </div>
+        <div style="display:flex; gap:12px;">
+            <button onclick="createPoll()" style="background:none; border:1px solid white; color:white; padding:5px 12px; border-radius:10px; cursor:pointer; font-size:11px; font-weight:bold;">+ POLL</button>
+            <button onclick="toggleTheme()" id="thBtn" style="background:none; border:1px solid white; color:white; padding:5px 12px; border-radius:10px; cursor:pointer; font-size:11px; font-weight:bold;">LIGHT</button>
+            <button onclick="purgeChat()" style="color:#ff4444; background:none; border:none; cursor:pointer; font-weight:bold; font-size:11px;">PURGE</button>
+        </div>
+    </header>
+
+    <div id="main-layout">
+        <div id="sidebar">
+            <div style="padding:20px; font-weight:bold; color:var(--primary); border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.8rem;">ONLINE USERS</div>
+            <div id="user-list" style="flex:1; overflow-y:auto;"></div>
+        </div>
+
+        <div id="msg-container">
+            <div id="messages"></div>
+            <div id="typing-indicator" style="padding:0 20px; height:20px; font-size:0.8rem; color:var(--primary); font-style:italic;"></div>
+            
+            <div id="input-panel">
+                <div id="reply-preview" class="preview-bar">
+                    <div id="reply-info" style="font-size:0.8rem"></div>
+                    <button onclick="cancelReply()" style="background:none; border:none; color:var(--text); cursor:pointer;">✕</button>
+                </div>
+                <div id="whisper-preview" class="preview-bar" style="background:var(--whisper); color:#000;">
+                    <div id="whisper-info" style="font-size:0.8rem; font-weight:bold;"></div>
+                    <button onclick="cancelWhisper()" style="background:none; border:none; color:#000; cursor:pointer;">✕</button>
+                </div>
+
+                <form id="chat-form" class="toolbar">
+                    <input type="file" id="media-upload" style="display:none" accept="image/*">
+                    <button type="button" class="btn-icon" onclick="document.getElementById('media-upload').click()">🖼️</button>
+                    <button type="button" id="mic-trigger" class="btn-icon">🎤</button>
+                    <input id="text-input" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" class="btn-icon">🚀</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, set, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyA-doUdzBaHWcQnGtw0KG84EKLwkC_F5Qw",
+      authDomain: "blue-chat-3.firebaseapp.com",
+      databaseURL: "https://blue-chat-3-default-rtdb.firebaseio.com",
+      projectId: "blue-chat-3",
+      storageBucket: "blue-chat-3.appspot.com",
+      messagingSenderId: "245583939693",
+      appId: "1:245583939693:web:d6037eac51827215c7d764",
+      measurementId: "G-YCGKJL8FGY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let myUser = localStorage.getItem('wc_apex_user');
+    let myColor = localStorage.getItem('wc_apex_color') || '#a855f7';
+    let whisperTargetId = null, activeReply = null, mediaRec, audioData = [];
+    const myId = "user_" + Math.random().toString(36).substr(2, 9);
+
+    if(!localStorage.getItem('wc_apex_color')) {
+        const colors = ['#f43f5e', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4'];
+        myColor = colors[Math.floor(Math.random() * colors.length)];
+        localStorage.setItem('wc_apex_color', myColor);
+    }
+
+    if(myUser) {
+        document.getElementById('login-overlay').style.display='none';
+        setupPresence();
+    }
+
+    window.login = function() {
+        const val = document.getElementById('user-input').value.trim();
+        if(val) {
+            localStorage.setItem('wc_apex_user', val);
+            location.reload();
+        }
+    }
+
+    function setupPresence() {
+        const userRef = ref(db, 'online/' + myId);
+        set(userRef, { name: myUser, color: myColor, id: myId });
+        onDisconnect(userRef).remove();
+
+        onValue(ref(db, 'online'), (snapshot) => {
+            const users = snapshot.val() || {};
+            document.getElementById('user-list').innerHTML = Object.values(users).map(u => `
+                <div onclick="setWhisper('${u.id}', '${u.name}')" style="padding:12px 20px; display:flex; align-items:center; gap:12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.02)">
+                    <div style="width:10px; height:10px; background:#10b981; border-radius:50%"></div>
+                    <span style="font-size:0.9rem">${u.name} ${u.id === myId ? '(Me)' : ''}</span>
+                </div>`).join('');
+        });
+    }
+
+    // TYPING LOGIC (Firebase Realtime)
+    const typingRef = ref(db, 'typing/' + myId);
+    document.getElementById('text-input').addEventListener('input', () => {
+        set(typingRef, { user: myUser, active: true });
+        clearTimeout(window.typeStopTimer);
+        window.typeStopTimer = setTimeout(() => set(typingRef, { active: false }), 2000);
+    });
+
+    onValue(ref(db, 'typing'), (snapshot) => {
+        const data = snapshot.val() || {};
+        const typing = Object.values(data).find(t => t.active && t.user !== myUser);
+        document.getElementById('typing-indicator').innerText = typing ? `${typing.user} is typing...` : "";
+    });
+
+    // MESSAGE RENDERER
+    const msgRef = ref(db, 'messages');
+    onValue(msgRef, (snapshot) => {
+        document.getElementById('messages').innerHTML = '';
+        const data = snapshot.val();
+        if(data) {
+            Object.keys(data).forEach(key => {
+                const m = data[key]; m.id = key;
+                if(!m.toId || m.toId === myId || m.senderId === myId) {
+                    renderMessage(m);
+                }
+            });
+        }
+    });
+
+    document.getElementById('chat-form').onsubmit = (e) => {
+        e.preventDefault();
+        const inp = document.getElementById('text-input');
+        if(inp.value.trim()) {
+            push(msgRef, {
+                type: 'text', content: inp.value, user: myUser, senderId: myId,
+                avatarColor: myColor, toId: whisperTargetId, reply: activeReply,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: serverTimestamp()
+            });
+            inp.value = ''; cancelWhisper(); cancelReply();
+        }
+    };
+
+    // MEDIA
+    document.getElementById('media-upload').addEventListener('change', function() {
+        const file = this.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = e => push(msgRef, {
+                type: 'image', content: e.target.result, user: myUser, senderId: myId,
+                avatarColor: myColor, toId: whisperTargetId, reply: activeReply,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+            reader.readAsDataURL(file);
+            this.value = ''; cancelWhisper(); cancelReply();
+        }
+    });
+
+    // VOICE
+    document.getElementById('mic-trigger').onclick = async () => {
+        const btn = document.getElementById('mic-trigger');
+        if (!mediaRec || mediaRec.state === "inactive") {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRec = new MediaRecorder(stream);
+                mediaRec.ondataavailable = e => audioData.push(e.data);
+                mediaRec.onstop = () => {
+                    const blob = new Blob(audioData, { type: 'audio/webm' });
+                    const r = new FileReader();
+                    r.onload = e => push(msgRef, { 
+                        type: 'audio', content: e.target.result, user: myUser, senderId: myId, avatarColor: myColor,
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    r.readAsDataURL(blob); audioData = [];
+                };
+                mediaRec.start(); btn.style.color = '#ef4444';
+            } catch(e) { alert("Mic denied."); }
+        } else { mediaRec.stop(); btn.style.color = 'var(--primary)'; }
+    };
+
+    // POLLS
+    const pollRef = ref(db, 'polls');
+    window.createPoll = () => {
+        const q = prompt("Enter Poll Question:");
+        const o = prompt("Enter Options (separated by commas):");
+        if(q && o) push(pollRef, { question: q, options: o.split(','), votes: {} });
+    };
+
+    onValue(pollRef, (snapshot) => {
+        const polls = snapshot.val();
+        if(polls) Object.keys(polls).forEach(id => renderPoll(id, polls[id]));
+    });
+
+    window.votePoll = (pollId, optIdx) => set(ref(db, `polls/${pollId}/votes/${myId}`), optIdx);
+
+    // UTILS
+    window.purgeChat = () => { if(confirm("Wipe everything?")) { remove(ref(db, 'messages')); remove(ref(db, 'polls')); } };
+    window.deleteMsg = (id) => remove(ref(db, 'messages/' + id));
+    window.setWhisper = (id, name) => {
+        if(id === myId) return; whisperTargetId = id;
+        document.getElementById('whisper-preview').style.display = 'flex';
+        document.getElementById('whisper-info').innerText = "Whispering to: " + name;
+    };
+    window.cancelWhisper = () => { whisperTargetId = null; document.getElementById('whisper-preview').style.display='none'; };
+    window.setReply = (u, txt) => {
+        activeReply = { user: u, text: txt.substring(0, 40) + "..." };
+        document.getElementById('reply-preview').style.display = 'flex';
+        document.getElementById('reply-info').innerText = "Replying to " + u;
+    };
+    window.cancelReply = () => { activeReply = null; document.getElementById('reply-preview').style.display='none'; };
+    window.toggleTheme = () => {
+        const isD = document.body.getAttribute('data-theme') === 'dark';
+        document.body.setAttribute('data-theme', isD ? 'light' : 'dark');
+        document.getElementById('thBtn').innerText = isD ? 'DARK' : 'LIGHT';
+    };
+
+    function renderMessage(d) {
+        const row = document.createElement('div');
+        row.className = `msg-row ${d.senderId === myId ? 'mine' : 'theirs'}`;
+        let replyHtml = d.reply ? `<div class="reply-quote"><b>${d.reply.user}</b>: ${d.reply.text}</div>` : "";
+        let body = d.content;
+        if(d.type === 'image') body = `<img src="${d.content}">`;
+        if(d.type === 'audio') body = `<audio controls src="${d.content}" style="max-width:210px"></audio>`;
+        
+        row.innerHTML = `
+            <div class="avatar" style="background:${d.avatarColor}">${d.user[0]}</div>
+            <div class="bubble ${d.toId ? 'is-whisper' : ''}" onclick="setReply('${d.user}', '${d.type==='text'?d.content:'Media'}')">
+                <small style="opacity:0.6; font-size:0.65rem; font-weight:bold; display:block;">${d.toId ? '🔒 PRIVATE' : d.user}</small>
+                ${replyHtml} ${body}
+                <small style="display:block; text-align:right; font-size:0.55rem; opacity:0.4; margin-top:5px;">${d.time} ✓✓</small>
+            </div>
+            ${d.senderId === myId ? `<button onclick="deleteMsg('${d.id}')" style="background:none; border:none; color:red; cursor:pointer; font-size:10px; align-self:center;">🗑️</button>` : ''}
+        `;
+        document.getElementById('messages').appendChild(row);
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    }
+
+    function renderPoll(id, p) {
+        let existing = document.getElementById(id);
+        const div = existing || document.createElement('div');
+        div.className = 'poll-card'; div.id = id;
+        const total = p.votes ? Object.keys(p.votes).length : 0;
+        const optsHtml = p.options.map((opt, idx) => {
+            const count = p.votes ? Object.values(p.votes).filter(v => v == idx).length : 0;
+            const pct = total ? (count / total) * 100 : 0;
+            return `<div class="poll-opt" onclick="votePoll('${id}', ${idx})">
+                <div class="poll-bar" style="width:${pct}%"></div>
+                <div style="position:relative; display:flex; justify-content:space-between; font-size:0.8rem">
+                    <span>${opt}</span><span>${count}</span>
+                </div>
+            </div>`;
+        }).join('');
+        div.innerHTML = `<b style="font-size:0.9rem">📊 ${p.question}</b><div style="margin-top:10px">${optsHtml}</div>`;
+        if(!existing) document.getElementById('messages').appendChild(div);
+    }
+</script>
+</body>
+</html>
