@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wayne Core Titan V18</title>
+    <title>Wayne Core Titan V19</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -50,7 +50,7 @@
         .theirs { align-items: flex-start; }
         
         .bubble { 
-            padding: 10px 14px; border-radius: 18px; font-size: 15px; max-width: 80%;
+            padding: 10px 14px; border-radius: 18px; font-size: 15px; max-width: 85%;
             position: relative; word-wrap: break-word; line-height: 1.4;
         }
         .mine .bubble { background: var(--my-msg); color: white; border-bottom-right-radius: 2px; }
@@ -59,7 +59,7 @@
         .whisper-active { border: 2px solid var(--whisper) !important; box-shadow: 0 0 10px rgba(234, 179, 8, 0.2); }
         .user-label { font-size: 11px; opacity: 0.6; margin-bottom: 2px; font-weight: bold; cursor: pointer; color: var(--primary); }
 
-        #whisper-notice { display: none; background: var(--whisper); color: #000; padding: 6px 15px; font-size: 12px; font-weight: bold; justify-content: space-between; align-items: center; }
+        #whisper-notice { display: none; background: var(--whisper); color: #000; padding: 8px 15px; font-size: 12px; font-weight: bold; justify-content: space-between; align-items: center; }
 
         #input-area { background: var(--card); padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
         .input-bar { background: var(--bg); border-radius: 25px; display: flex; align-items: center; padding: 5px 15px; border: 1px solid #333; gap: 8px; }
@@ -69,12 +69,11 @@
         .recording { color: var(--danger); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* POLL RESULTS CSS */
-        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 12px; padding: 15px; width: 280px; margin: 5px 0; }
-        .poll-opt { position: relative; background: rgba(255,255,255,0.05); margin: 8px 0; border-radius: 8px; cursor: pointer; overflow: hidden; height: 35px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; border: 1px solid transparent; }
-        .poll-opt:hover { border-color: var(--primary); }
-        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: rgba(168, 85, 247, 0.3); transition: width 0.5s ease; z-index: 0; }
-        .poll-text { position: relative; z-index: 1; display: flex; justify-content: space-between; width: 100%; }
+        /* POLL MOBILE FIX */
+        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 12px; padding: 12px; width: 280px; margin: 5px 0; }
+        .poll-opt { position: relative; background: rgba(255,255,255,0.08); margin: 8px 0; border-radius: 8px; cursor: pointer; overflow: hidden; height: 40px; display: flex; align-items: center; padding: 0 12px; font-size: 13px; }
+        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.4; transition: width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); z-index: 1; }
+        .poll-text { position: relative; z-index: 2; display: flex; justify-content: space-between; width: 100%; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
@@ -96,7 +95,7 @@
 
 <div id="whisper-notice">
     <span>WHISPERING TO: <span id="target-name"></span></span>
-    <span onclick="cancelWhisper()" style="cursor:pointer;">✕</span>
+    <span onclick="cancelWhisper()" style="cursor:pointer; padding:5px;">✕</span>
 </div>
 
 <div id="main-layout">
@@ -125,7 +124,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, onValue, set, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const config = {
       apiKey: "AIzaSyBm_1W_5MRFJEOJZ4-6itgacgSon3DG-H0",
@@ -188,12 +187,12 @@
         let content = '';
 
         if(m.type === 'poll') {
-            content = `<div class="poll-card" id="poll-${key}">
-                        <b>📊 ${m.q}</b>
+            content = `<div class="poll-card">
+                        <b style="font-size:14px;">📊 ${m.q}</b>
                         <div id="opts-${key}">${renderPollOptions(key, m)}</div>
                        </div>`;
             
-            // Re-render poll on vote change
+            // Real-time listener for the vote bars
             onValue(ref(db, `messages/${key}/votes`), () => {
                 const optBox = document.getElementById(`opts-${key}`);
                 if(optBox) {
@@ -203,9 +202,9 @@
                 }
             });
         } else if(m.audio) {
-            content = `<div class="${bubbleClass}"><audio controls src="${m.audio}" style="width:180px; height:30px;"></audio></div>`;
+            content = `<div class="${bubbleClass}"><audio controls src="${m.audio}" style="width:200px; height:35px;"></audio></div>`;
         } else if(m.img) {
-            content = `<div class="${bubbleClass}"><img src="${m.img}" style="max-width:100%; border-radius:10px;"></div>`;
+            content = `<div class="${bubbleClass}"><img src="${m.img}" style="max-width:100%; border-radius:10px; display:block;"></div>`;
         } else {
             content = `<div class="user-label" onclick="startWhisper('${m.uid}', '${m.user}')">${m.user}</div>
                        <div class="${bubbleClass}">${m.text}</div>`;
