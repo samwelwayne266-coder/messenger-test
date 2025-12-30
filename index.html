@@ -3,101 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Wayne Core Supreme Apex</title>
+    <title>Wayne Core Titan</title>
+    
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({ appId: "3504bc48-2267-4c0b-817d-faf41d5057c2" });
+      });
+    </script>
+
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --text: #fafafa;
             --primary: #a855f7; --my-msg: #a855f7; --other-msg: #27272a;
-            --whisper: #eab308; --poll-bg: rgba(168, 85, 247, 0.1);
+            --whisper: #eab308; --danger: #ef4444;
         }
         [data-theme="light"] {
             --bg: #f4f4f5; --card: #ffffff; --text: #09090b;
             --primary: #7c3aed; --my-msg: #7c3aed; --other-msg: #e4e4e7;
-            --poll-bg: rgba(124, 58, 237, 0.1);
         }
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; height: 100dvh; background: var(--bg); color: var(--text); overflow: hidden; display: flex; flex-direction: column; }
-        header { padding: 15px 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; }
-        #main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
-        #sidebar { width: 280px; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: 0.3s; }
-        #msg-container { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg-row { display: flex; gap: 12px; margin-bottom: 5px; align-items: flex-end; width: 100%; }
+        * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Glassmorphism Header */
+        header { 
+            padding: 15px 20px; 
+            background: rgba(168, 85, 247, 0.8); 
+            backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center; 
+            z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #main-layout { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Expandable Sidebar */
+        #sidebar { 
+            width: 280px; background: rgba(0,0,0,0.2); 
+            border-right: 1px solid rgba(255,255,255,0.05); 
+            display: flex; flex-direction: column; transition: 0.3s;
+        }
+
+        /* Message Area */
+        #msg-container { flex: 1; display: flex; flex-direction: column; position: relative; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .msg-row { display: flex; gap: 10px; margin-bottom: 4px; align-items: flex-end; }
         .mine { flex-direction: row-reverse; }
-        .avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; }
-        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 20px; font-size: 15px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; }
-        .mine .bubble { background: var(--my-msg); color: white; border-bottom-right-radius: 4px; }
-        .theirs .bubble { background: var(--other-msg); color: var(--text); border-bottom-left-radius: 4px; }
-        .is-whisper { border: 2px dashed var(--whisper); }
-        .reply-quote { background: rgba(0,0,0,0.2); border-left: 3px solid #fff; padding: 6px 10px; margin-bottom: 8px; border-radius: 6px; font-size: 0.75rem; }
-        .bubble img { max-width: 100%; max-height: 300px; border-radius: 12px; display: block; margin: 8px 0; }
-        .poll-card { background: var(--poll-bg); border: 1px solid var(--primary); padding: 15px; border-radius: 15px; margin: 10px 0; }
-        .poll-opt { background: rgba(255,255,255,0.05); padding: 10px; margin: 8px 0; border-radius: 10px; cursor: pointer; position: relative; overflow: hidden; }
-        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.3; transition: 0.6s; }
+        
+        .bubble { 
+            max-width: 75%; padding: 12px 16px; border-radius: 20px; 
+            font-size: 15px; position: relative; transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .mine .bubble { background: var(--my-msg); border-bottom-right-radius: 4px; color: white; }
+        .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 4px; }
+        
+        /* Reactions */
+        .reactions { 
+            display: flex; gap: 4px; margin-top: -8px; margin-left: 10px;
+            background: var(--card); border-radius: 10px; padding: 2px 6px;
+            font-size: 12px; border: 1px solid rgba(255,255,255,0.1);
+            width: fit-content;
+        }
+
+        /* Input Panel */
         #input-panel { padding: 15px; background: var(--card); border-top: 1px solid rgba(255,255,255,0.1); }
-        .preview-bar { display: none; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid var(--primary); justify-content: space-between; align-items: center; }
-        .toolbar { display: flex; gap: 12px; align-items: center; position: relative; }
-        #text-input { flex: 1; border: none; padding: 14px 20px; border-radius: 30px; background: var(--bg); color: var(--text); outline: none; font-size: 16px; }
-        .char-counter { position: absolute; right: 60px; bottom: -18px; font-size: 10px; opacity: 0.5; }
-        .btn-icon { background: none; border: none; color: var(--primary); font-size: 1.5rem; cursor: pointer; }
-        @media (max-width: 850px) { #sidebar { position: absolute; left: -280px; z-index: 2000; height: 100%; background: var(--card); } #sidebar.open { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.5); } }
+        .toolbar { display: flex; gap: 10px; align-items: center; }
+        #text-input { 
+            flex: 1; padding: 12px 18px; border-radius: 25px; 
+            border: none; background: var(--bg); color: white; outline: none; 
+        }
+        
+        .btn-icon { background: none; border: none; color: var(--primary); font-size: 1.4rem; cursor: pointer; opacity: 0.8; }
+        .btn-icon:hover { opacity: 1; transform: scale(1.1); }
+
+        /* Overlays */
         #login-overlay { position: fixed; inset: 0; background: #000; z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: var(--card); padding: 40px; border-radius: 30px; text-align: center; border: 1px solid var(--primary); width: 90%; max-width: 400px; }
+        .login-card { background: var(--card); padding: 40px; border-radius: 25px; text-align: center; border: 1px solid var(--primary); width: 90%; max-width: 380px; }
+        
+        audio { height: 35px; width: 200px; margin-top: 5px; border-radius: 10px; }
     </style>
 </head>
 <body data-theme="dark">
 
 <div id="login-overlay">
     <div class="login-card">
-        <h1 style="color:var(--primary);">WAYNE CORE</h1>
-        <p style="opacity:0.5; font-weight:bold;">APEX SUPREME V7</p>
-        <input type="text" id="user-input" placeholder="Username..." maxlength="15" style="width:100%; padding:18px; border-radius:15px; margin-bottom:20px; background:#000; color:#fff; border:none; text-align:center;">
-        <button onclick="login()" style="width:100%; padding:18px; background:var(--primary); color:white; border:none; border-radius:15px; font-weight:bold;">JOIN NETWORK</button>
+        <h1 style="color:var(--primary); margin-bottom: 5px;">WAYNE CORE</h1>
+        <p style="font-size: 12px; opacity: 0.6; margin-bottom: 25px;">TITAN PROTOCOL V8</p>
+        <input type="password" id="secret-input" placeholder="Secret Key (WAYNE)" style="width:100%; padding:15px; border-radius:12px; margin-bottom:10px; background:#000; color:#fff; border:1px solid #333; text-align:center;">
+        <input type="text" id="user-input" placeholder="Display Name" maxlength="12" style="width:100%; padding:15px; border-radius:12px; margin-bottom:20px; background:#000; color:#fff; border:1px solid #333; text-align:center;">
+        <button onclick="login()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">AUTHENTICATE</button>
     </div>
 </div>
 
-<div id="chat-container">
-    <header>
-        <div style="display:flex; align-items:center; gap:15px;">
-            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:none; color:white; font-size:1.5rem;">☰</button>
-            <span style="font-weight:900;">WAYNE CORE</span>
-        </div>
-        <div style="display:flex; gap:10px;">
-            <button onclick="requestNotify()" style="background:white; color:black; border:none; padding:5px 12px; border-radius:10px; font-size:10px; font-weight:bold;">🔔 ENABLE</button>
-            <button onclick="createPoll()" style="background:none; border:1px solid white; color:white; padding:5px; border-radius:5px; font-size:10px;">+ POLL</button>
-            <button onclick="toggleTheme()" id="thBtn" style="background:none; border:1px solid white; color:white; padding:4px 8px; border-radius:5px; font-size:10px;">LIGHT</button>
-            <button onclick="purgeChat()" style="color:#ff4444; background:none; border:none; font-size:10px; font-weight:bold;">PURGE</button>
-        </div>
-    </header>
+<header>
+    <div style="display:flex; align-items:center; gap:12px;">
+        <div id="online-indicator" style="width:10px; height:10px; background:#10b981; border-radius:50%; box-shadow: 0 0 10px #10b981;"></div>
+        <span style="font-weight:900; letter-spacing:1.5px; text-transform:uppercase;">Wayne Core</span>
+    </div>
+    <div style="display:flex; gap:15px;">
+        <button onclick="toggleTheme()" class="btn-icon" style="font-size: 1rem;">🌓</button>
+        <button onclick="purgeChat()" style="color:white; background:var(--danger); border:none; padding: 5px 10px; border-radius:5px; font-size:10px; font-weight:bold; cursor:pointer;">PURGE</button>
+    </div>
+</header>
 
-    <div id="main-layout">
-        <div id="sidebar">
-            <div style="padding:15px; font-weight:bold; color:var(--primary);">ONLINE</div>
-            <div id="user-list"></div>
-        </div>
-        <div id="msg-container">
-            <div id="messages"></div>
-            <div id="typing-indicator" style="padding:0 20px; font-size:0.8rem; color:var(--primary); height:20px;"></div>
-            <div id="input-panel">
-                <div id="reply-preview" class="preview-bar"><div id="reply-info"></div><button onclick="cancelReply()">✕</button></div>
-                <div id="whisper-preview" class="preview-bar" style="background:var(--whisper); color:#000;"><div id="whisper-info"></div><button onclick="cancelWhisper()">✕</button></div>
-                <form id="chat-form" class="toolbar">
-                    <input type="file" id="media-upload" style="display:none" accept="image/*">
-                    <button type="button" class="btn-icon" onclick="document.getElementById('media-upload').click()">🖼️</button>
-                    <button type="button" id="mic-trigger" class="btn-icon">🎤</button>
-                    <input id="text-input" placeholder="Type..." autocomplete="off" maxlength="500">
-                    <span class="char-counter" id="char-count">0/500</span>
-                    <button type="submit" class="btn-icon">🚀</button>
-                </form>
+<div id="main-layout">
+    <div id="sidebar">
+        <div style="padding:20px; font-size:12px; font-weight:bold; color:var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05);">ACTIVE USERS</div>
+        <div id="user-list" style="flex:1; overflow-y:auto;"></div>
+    </div>
+    
+    <div id="msg-container">
+        <div id="messages"></div>
+        <div id="typing-indicator" style="padding:5px 20px; font-size:11px; color:var(--primary); font-style:italic; height:20px;"></div>
+        
+        <div id="input-panel">
+            <div id="preview-area" style="display:none; padding-bottom:10px; font-size:12px; color:var(--primary); display:flex; justify-content:space-between;">
+                <span id="preview-text"></span>
+                <button onclick="cancelAction()" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
             </div>
+            <form id="chat-form" class="toolbar">
+                <input type="file" id="file-input" style="display:none" accept="image/*">
+                <button type="button" class="btn-icon" onclick="document.getElementById('file-input').click()">🖼️</button>
+                <button type="button" id="record-btn" class="btn-icon">🎙️</button>
+                <input id="text-input" placeholder="Type a secure message..." autocomplete="off">
+                <button type="submit" class="btn-icon">🚀</button>
+            </form>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+    import { getDatabase, ref, push, onValue, set, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBm_1W_5MRFJEOJZ4-6itgacgSon3DG-H0",
@@ -111,186 +150,176 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const messaging = getMessaging(app);
-
+    
+    const SECRET = "WAYNE";
     let myUser = localStorage.getItem('wc_apex_user');
-    let myColor = localStorage.getItem('wc_apex_color') || '#a855f7';
-    let whisperTargetId = null, activeReply = null, mediaRec, audioData = [];
-    const myId = "user_" + Math.random().toString(36).substr(2, 9);
+    let myColor = localStorage.getItem('wc_apex_color') || '#' + Math.floor(Math.random()*16777215).toString(16);
+    const myId = "uid_" + Math.random().toString(36).substr(2, 7);
+    
+    let whisperTarget = null;
+    let mediaRecorder, audioChunks = [];
 
     if(myUser) {
         document.getElementById('login-overlay').style.display='none';
-        setupPresence();
-        initMessages();
-        initPolls();
-        initTyping();
-        
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./firebase-messaging-sw.js')
-            .then(reg => console.log('Wayne Core SW Active'))
-            .catch(err => console.error('SW Error:', err));
-        }
+        setupApp();
     }
 
     window.login = () => {
-        const val = document.getElementById('user-input').value.trim();
-        if(val) { localStorage.setItem('wc_apex_user', val); location.reload(); }
+        const c = document.getElementById('secret-input').value.trim();
+        const u = document.getElementById('user-input').value.trim();
+        if(c === SECRET && u) {
+            localStorage.setItem('wc_apex_user', u);
+            localStorage.setItem('wc_apex_color', myColor);
+            location.reload();
+        } else { alert("ACCESS DENIED"); }
     };
 
-    window.requestNotify = async () => {
+    async function sendPush(msg) {
+        if(whisperTarget) return;
+        const KEY = "os_v2_app_guclysbcm5gaxal57l2b2ucxyipnvwbknj4uqcfjtiq7ngm3a5kpfzmqxvl5arjwul577o4s4eaxsppypzlmjo45totbvf6ewfnv24a";
         try {
-            const permission = await Notification.requestPermission();
-            if(permission === 'granted') {
-                const registration = await navigator.serviceWorker.getRegistration();
-                const token = await getToken(messaging, { 
-                    serviceWorkerRegistration: registration,
-                    vapidKey: 'BIuY2s439LjkSrsCNNb8CJAfsJDSinl21OctnAtn_sSXl6J6Q--FxwPaC8jFYKW-HJMKfqvmuymGEEdRaAy2H1E' 
-                });
-                console.log("Token:", token);
-                alert("Notifications Active!");
-            }
-        } catch (e) { 
-            console.error(e);
-            alert("Ensure firebase-messaging-sw.js is in your root folder."); 
-        }
-    };
+            await fetch("https://onesignal.com/api/v1/notifications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Basic " + KEY },
+                body: JSON.stringify({
+                    app_id: "3504bc48-2267-4c0b-817d-faf41d5057c2",
+                    included_segments: ["Total Subscriptions"],
+                    headings: { "en": "Wayne Core: " + myUser },
+                    contents: { "en": msg }
+                })
+            });
+        } catch(e){}
+    }
 
-    onMessage(messaging, (payload) => {
-        new Notification(payload.notification.title, { body: payload.notification.body });
-    });
-
-    document.getElementById('text-input').addEventListener('input', (e) => {
-        document.getElementById('char-count').innerText = `${e.target.value.length}/500`;
-    });
-
-    function setupPresence() {
-        const userRef = ref(db, 'online/' + myId);
-        set(userRef, { name: myUser, color: myColor, id: myId });
-        onDisconnect(userRef).remove();
-        onValue(ref(db, 'online'), (snap) => {
-            const users = snap.val() || {};
-            document.getElementById('user-list').innerHTML = Object.values(users).map(u => `
-                <div onclick="setWhisper('${u.id}', '${u.name}')" style="padding:12px 20px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.02);">🟢 ${u.name}</div>
+    function setupApp() {
+        // Presence Logic
+        const pRef = ref(db, 'online/' + myId);
+        set(pRef, { name: myUser, color: myColor });
+        onDisconnect(pRef).remove();
+        
+        onValue(ref(db, 'online'), snap => {
+            const list = snap.val() || {};
+            document.getElementById('user-list').innerHTML = Object.entries(list).map(([id, u]) => `
+                <div onclick="setWhisper('${id}', '${u.name}')" style="padding:15px 20px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,0.02);">
+                    <div style="width:8px; height:8px; background:#10b981; border-radius:50%;"></div>
+                    <span>${u.name} ${id === myId ? '(You)' : ''}</span>
+                </div>
             `).join('');
         });
-    }
 
-    function initTyping() {
-        const tRef = ref(db, 'typing/' + myId);
-        document.getElementById('text-input').oninput = () => {
-            set(tRef, { user: myUser, active: true });
-            clearTimeout(window.tTime);
-            window.tTime = setTimeout(() => set(tRef, { active: false }), 2000);
-        };
-        onValue(ref(db, 'typing'), (snap) => {
-            const active = Object.values(snap.val()||{}).find(t => t.active && t.user !== myUser);
-            document.getElementById('typing-indicator').innerText = active ? active.user + " is typing..." : "";
-        });
-    }
-
-    function initMessages() {
-        onValue(ref(db, 'messages'), (snap) => {
+        // Message Sync
+        onValue(ref(db, 'messages'), snap => {
             const container = document.getElementById('messages');
             container.innerHTML = '';
             const data = snap.val();
             if(data) {
-                Object.keys(data).forEach(id => {
-                    const m = data[id]; m.id = id;
-                    if(!m.toId || m.toId === myId || m.senderId === myId) renderMessage(m);
+                Object.entries(data).forEach(([key, m]) => {
+                    if(!m.toId || m.toId === myId || m.senderId === myId) renderMsg(key, m);
                 });
+                container.scrollTop = container.scrollHeight;
             }
         });
+
+        // Typing Indicator
+        const tRef = ref(db, 'typing/' + myId);
+        document.getElementById('text-input').oninput = (e) => {
+            set(tRef, { name: myUser, typing: e.target.value.length > 0 });
+            clearTimeout(window.tTime);
+            window.tTime = setTimeout(() => set(tRef, { typing: false }), 2000);
+        };
+        onValue(ref(db, 'typing'), snap => {
+            const typing = Object.values(snap.val()||{}).find(t => t.typing && t.name !== myUser);
+            document.getElementById('typing-indicator').innerText = typing ? `${typing.name} is typing...` : '';
+        });
+    }
+
+    function renderMsg(key, m) {
+        const row = document.createElement('div');
+        row.className = `msg-row ${m.senderId === myId ? 'mine' : 'theirs'}`;
+        
+        let contentHtml = m.content;
+        if(m.type === 'audio') contentHtml = `<audio controls src="${m.audio}"></audio>`;
+        if(m.image) contentHtml = `<img src="${m.image}" style="max-width:200px; border-radius:10px; display:block; margin-bottom:5px;">` + m.content;
+
+        row.innerHTML = `
+            <div class="bubble" style="${m.toId ? 'border: 1px dashed var(--whisper);' : ''}" oncontextmenu="deleteMsg('${key}', '${m.senderId}'); return false;">
+                <small style="display:block; opacity:0.5; font-size:10px;">${m.toId ? '🔒 Whisper' : m.user}</small>
+                ${contentHtml}
+                ${m.reactions ? `<div class="reactions">${Object.keys(m.reactions).join(' ')}</div>` : ''}
+            </div>
+        `;
+        
+        row.onclick = () => addReaction(key);
+        document.getElementById('messages').appendChild(row);
     }
 
     document.getElementById('chat-form').onsubmit = (e) => {
         e.preventDefault();
         const inp = document.getElementById('text-input');
         if(inp.value.trim()) {
-            push(ref(db, 'messages'), {
-                type: 'text', content: inp.value, user: myUser, senderId: myId,
-                avatarColor: myColor, toId: whisperTargetId, reply: activeReply,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            const msg = inp.value;
+            push(ref(db, 'messages'), { 
+                content: msg, user: myUser, senderId: myId, toId: whisperTarget 
             });
-            inp.value = ''; document.getElementById('char-count').innerText = '0/500';
-            cancelWhisper(); cancelReply();
+            sendPush(msg);
+            inp.value = ''; cancelAction();
         }
     };
 
-    document.getElementById('media-upload').onchange = function() {
-        const reader = new FileReader();
-        reader.onload = e => push(ref(db, 'messages'), { type: 'image', content: e.target.result, user: myUser, senderId: myId, avatarColor: myColor });
-        reader.readAsDataURL(this.files[0]);
-    };
-
-    document.getElementById('mic-trigger').onclick = async () => {
-        if (!mediaRec || mediaRec.state === "inactive") {
+    // Voice Notes
+    const recBtn = document.getElementById('record-btn');
+    recBtn.onclick = async () => {
+        if(!mediaRecorder || mediaRecorder.state === 'inactive') {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRec = new MediaRecorder(stream);
-            mediaRec.ondataavailable = e => audioData.push(e.data);
-            mediaRec.onstop = () => {
-                const blob = new Blob(audioData, { type: 'audio/webm' });
-                const r = new FileReader();
-                r.onload = e => push(ref(db, 'messages'), { type: 'audio', content: e.target.result, user: myUser, senderId: myId, avatarColor: myColor });
-                r.readAsDataURL(blob); audioData = [];
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onload = () => {
+                    push(ref(db, 'messages'), { type: 'audio', audio: reader.result, user: myUser, senderId: myId });
+                    sendPush("🎤 Sent a voice note");
+                };
+                reader.readAsDataURL(blob);
+                audioChunks = [];
             };
-            mediaRec.start(); document.getElementById('mic-trigger').style.color = 'red';
-        } else { mediaRec.stop(); document.getElementById('mic-trigger').style.color = 'var(--primary)'; }
+            mediaRecorder.start();
+            recBtn.innerText = '🛑';
+        } else {
+            mediaRecorder.stop();
+            recBtn.innerText = '🎙️';
+        }
     };
 
-    window.createPoll = () => {
-        const q = prompt("Question:");
-        const o = prompt("Options (comma separated):");
-        if(q && o) push(ref(db, 'polls'), { question: q, options: o.split(','), votes: {} });
+    // Images
+    document.getElementById('file-input').onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            push(ref(db, 'messages'), { image: reader.result, content: "Shared a photo", user: myUser, senderId: myId });
+            sendPush("🖼️ Shared a photo");
+        };
+        reader.readAsDataURL(e.target.files[0]);
     };
 
-    function initPolls() {
-        onValue(ref(db, 'polls'), (snap) => {
-            const polls = snap.val();
-            if(polls) Object.keys(polls).forEach(id => renderPoll(id, polls[id]));
-        });
-    }
-
-    function renderMessage(d) {
-        const row = document.createElement('div');
-        row.className = `msg-row ${d.senderId === myId ? 'mine' : 'theirs'}`;
-        let body = d.content;
-        if(d.type==='image') body=`<img src="${d.content}">`;
-        if(d.type==='audio') body=`<audio controls src="${d.content}"></audio>`;
-        row.innerHTML = `
-            <div class="avatar" style="background:${d.avatarColor}">${d.user[0]}</div>
-            <div class="bubble ${d.toId?'is-whisper':''}" onclick="setReply('${d.user}', '${d.content.substring(0,20)}...')">
-                <small>${d.toId?'🔒 PRIVATE':d.user}</small>
-                ${d.reply?`<div class="reply-quote">${d.reply.text}</div>`:''}
-                <div>${body}</div>
-            </div>
-        `;
-        document.getElementById('messages').appendChild(row);
-        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-    }
-
-    function renderPoll(id, p) {
-        let div = document.getElementById(id) || document.createElement('div');
-        div.className = 'poll-card'; div.id = id;
-        const totalVotes = p.votes ? Object.keys(p.votes).length : 0;
-        div.innerHTML = `<b>📊 ${p.question}</b>` + p.options.map((o, i) => {
-            const count = p.votes ? Object.values(p.votes).filter(v => v === i).length : 0;
-            const pct = totalVotes ? (count / totalVotes) * 100 : 0;
-            return `<div class="poll-opt" onclick="votePoll('${id}',${i})"><div class="poll-bar" style="width:${pct}%"></div>${o} (${count})</div>`;
-        }).join('');
-        if(!document.getElementById(id)) document.getElementById('messages').appendChild(div);
-    }
-
-    window.votePoll = (id, i) => set(ref(db, `polls/${id}/votes/${myId}`), i);
-    window.setWhisper = (id, name) => { whisperTargetId = id; document.getElementById('whisper-preview').style.display='flex'; document.getElementById('whisper-info').innerText = "🔒 Whispering to "+name; };
-    window.cancelWhisper = () => { whisperTargetId = null; document.getElementById('whisper-preview').style.display='none'; };
-    window.setReply = (u, t) => { activeReply = {text: t}; document.getElementById('reply-preview').style.display='flex'; document.getElementById('reply-info').innerText = "Replying to: "+t; };
-    window.cancelReply = () => { activeReply = null; document.getElementById('reply-preview').style.display='none'; };
-    window.toggleTheme = () => {
-        const isD = document.body.getAttribute('data-theme') === 'dark';
-        document.body.setAttribute('data-theme', isD ? 'light' : 'dark');
-        document.getElementById('thBtn').innerText = isD ? 'DARK' : 'LIGHT';
+    window.addReaction = (key) => {
+        const reaction = prompt("Enter an emoji reaction:");
+        if(reaction) update(ref(db, `messages/${key}/reactions`), { [reaction]: true });
     };
-    window.purgeChat = () => { if(confirm("Purge all?")) { remove(ref(db, 'messages')); remove(ref(db, 'polls')); } };
+
+    window.deleteMsg = (key, sid) => {
+        if(sid === myId && confirm("Delete message?")) remove(ref(db, `messages/${key}`));
+    };
+
+    window.setWhisper = (id, name) => { 
+        if(id === myId) return;
+        whisperTarget = id; 
+        document.getElementById('preview-area').style.display = 'flex';
+        document.getElementById('preview-text').innerText = "🔒 Whispering to " + name;
+    };
+
+    window.cancelAction = () => { whisperTarget = null; document.getElementById('preview-area').style.display = 'none'; };
+    window.toggleTheme = () => document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    window.purgeChat = () => { if(confirm("Purge Network?")) remove(ref(db, 'messages')); };
 </script>
 </body>
 </html>
