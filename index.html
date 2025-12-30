@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wayne Core Titan V16</title>
+    <title>Wayne Core Titan V17</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -12,8 +12,7 @@
         await OS.init({
           appId: "3504bc48-2267-4c0b-817d-faf41d5057c2",
           serviceWorkerPath: "OneSignalSDKWorker.js",
-          serviceWorkerParam: { scope: "/messenger-test/" },
-          safari_web_id: "web.onesignal.auto.064c125d-4f81-432d-8877-087094775432"
+          serviceWorkerParam: { scope: "/messenger-test/" }
         });
       });
     </script>
@@ -22,7 +21,7 @@
         :root {
             --bg: #0b0e14; --card: #1c2128; --text: #e6edf3;
             --primary: #a855f7; --my-msg: #581c87; --other-msg: #2d333b;
-            --whisper-color: #eab308; --danger: #f85149;
+            --whisper: #eab308; --danger: #f85149;
         }
         * { box-sizing: border-box; font-family: -apple-system, sans-serif; }
         body { margin: 0; background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
@@ -31,7 +30,7 @@
             height: 60px; padding: 0 15px; background: var(--card); border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex; justify-content: space-between; align-items: center; z-index: 100;
         }
-        .brand { font-weight: 900; color: var(--primary); cursor: pointer; letter-spacing: 1px; }
+        .brand { font-weight: 900; color: var(--primary); letter-spacing: 1px; }
 
         #main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
         #sidebar { 
@@ -43,7 +42,7 @@
             #sidebar.open { transform: translateX(0); }
         }
 
-        #msg-container { flex: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+        #msg-container { flex: 1; display: flex; flex-direction: column; background: var(--bg); }
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
         
         .msg-row { display: flex; flex-direction: column; width: 100%; }
@@ -57,24 +56,21 @@
         .mine .bubble { background: var(--my-msg); color: white; border-bottom-right-radius: 2px; }
         .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 2px; }
         
-        .whisper-bubble { border: 1px solid var(--whisper-color) !important; background: rgba(234, 179, 8, 0.1) !important; }
-        
-        .user-label { font-size: 11px; opacity: 0.6; margin-bottom: 2px; cursor: pointer; color: var(--primary); font-weight: bold; }
-        .user-label:hover { text-decoration: underline; }
+        .whisper-active { border: 2px solid var(--whisper) !important; box-shadow: 0 0 10px rgba(234, 179, 8, 0.2); }
+        .user-label { font-size: 11px; opacity: 0.6; margin-bottom: 2px; font-weight: bold; cursor: pointer; color: var(--primary); }
 
-        #whisper-bar { display: none; background: var(--whisper-color); color: #000; padding: 5px 15px; font-size: 12px; font-weight: bold; justify-content: space-between; align-items: center; }
+        #whisper-notice { display: none; background: var(--whisper); color: #000; padding: 6px 15px; font-size: 12px; font-weight: bold; justify-content: space-between; align-items: center; }
 
         #input-area { background: var(--card); padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .input-bar { background: var(--bg); border-radius: 25px; display: flex; align-items: center; padding: 5px 15px; border: 1px solid #333; gap: 10px; }
+        .input-bar { background: var(--bg); border-radius: 25px; display: flex; align-items: center; padding: 5px 15px; border: 1px solid #333; gap: 8px; }
         #text-input { flex: 1; background: transparent; border: none; color: white; padding: 10px 0; outline: none; font-size: 16px; }
         
         .btn-icon { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--primary); display: flex; align-items: center; }
         .recording { color: var(--danger); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 12px; padding: 15px; width: 100%; max-width: 280px; margin: 5px 0; }
-        .poll-opt { background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s; }
-        .poll-opt:hover { background: var(--primary); color: white; }
+        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 12px; padding: 15px; width: 260px; }
+        .poll-opt { background: rgba(255,255,255,0.05); padding: 8px; margin: 5px 0; border-radius: 6px; cursor: pointer; text-align: center; }
     </style>
 </head>
 <body>
@@ -82,7 +78,6 @@
 <div id="login-overlay" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center;">
     <div style="background:var(--card); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--primary); width:90%; max-width:340px;">
         <h2 style="color:var(--primary); margin:0;">Wayne Core</h2>
-        <p style="font-size:10px; opacity:0.5; margin-bottom:20px;">TITAN V16</p>
         <input type="password" id="secret-code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; background:#0b0e14; color:#fff; border:1px solid #333;" placeholder="Secret Code">
         <input type="text" id="username" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; background:#0b0e14; color:#fff; border:1px solid #333;" placeholder="Codename">
         <button onclick="login()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold;">INITIALIZE</button>
@@ -91,21 +86,22 @@
 
 <header>
     <button onclick="toggleSidebar()" class="btn-icon">☰</button>
-    <div class="brand" onclick="wipeSystem()">Wayne Core</div>
+    <div class="brand">Wayne Core</div>
     <div id="status-dot" style="width:10px; height:10px; background:#2ea043; border-radius:50%;"></div>
 </header>
 
-<div id="whisper-bar">
-    <span>WHISPERING TO: <span id="whisper-target"></span></span>
-    <span onclick="cancelWhisper()" style="cursor:pointer; padding:2px 10px;">✕</span>
+<div id="whisper-notice">
+    <span>WHISPERING TO: <span id="target-name"></span></span>
+    <span onclick="cancelWhisper()" style="cursor:pointer;">✕</span>
 </div>
 
 <div id="main-layout">
     <div id="sidebar">
         <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); color:var(--primary); font-weight:bold; font-size:12px;">ACTIVE NODES</div>
         <div id="user-list" style="flex:1; overflow-y:auto;"></div>
-        <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1);">
-            <button onclick="createPoll()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; font-size:12px;">+ NEW POLL</button>
+        <div style="padding:15px; display:flex; flex-direction:column; gap:8px;">
+            <button onclick="createPoll()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; font-size:11px;">+ NEW POLL</button>
+            <button onclick="wipeSystem()" style="width:100%; padding:10px; background:var(--danger); color:white; border:none; border-radius:8px; font-weight:bold; font-size:11px;">WIPE SYSTEM</button>
         </div>
     </div>
     
@@ -113,9 +109,11 @@
         <div id="messages"></div>
         <div id="input-area">
             <div class="input-bar">
+                <input type="file" id="img-in" style="display:none" accept="image/*">
+                <button onclick="document.getElementById('img-in').click()" class="btn-icon">🖼️</button>
                 <button id="mic-btn" class="btn-icon">🎤</button>
                 <input id="text-input" placeholder="Message..." autocomplete="off">
-                <button onclick="sendMessage()" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">SEND</button>
+                <button onclick="sendMessage()" style="background:var(--primary); color:white; border:none; padding:10px 18px; border-radius:20px; font-weight:bold;">SEND</button>
             </div>
         </div>
     </div>
@@ -138,11 +136,8 @@
     const app = initializeApp(config);
     const db = getDatabase(app);
     const myId = "usr_" + Math.random().toString(36).substr(2, 6);
-    let myUser = localStorage.getItem('wc_user_v16');
-    let whisperTarget = null;
-    let whisperTargetName = "";
-    
-    // Audio Variables
+    let myUser = localStorage.getItem('wc_user_v17');
+    let whisperTo = null;
     let mediaRecorder;
     let audioChunks = [];
 
@@ -151,7 +146,7 @@
     window.login = () => {
         const c = document.getElementById('secret-code').value;
         const n = document.getElementById('username').value.trim();
-        if(c === "WAYNE" && n) { localStorage.setItem('wc_user_v16', n); location.reload(); }
+        if(c === "WAYNE" && n) { localStorage.setItem('wc_user_v17', n); location.reload(); }
     };
 
     function initApp() {
@@ -178,21 +173,25 @@
     }
 
     function renderMsg(key, m) {
-        // Filter whispers
+        // Logic: Only show if public OR if I am the sender/receiver of the whisper
         if(m.whisper && m.whisper !== myId && m.uid !== myId) return;
 
         const isMine = m.uid === myId;
         const div = document.createElement('div');
         div.className = `msg-row ${isMine ? 'mine' : 'theirs'}`;
         
+        let bubbleClass = `bubble ${m.whisper ? 'whisper-active' : ''}`;
         let content = '';
+
         if(m.type === 'poll') {
             content = `<div class="poll-card"><b>📊 ${m.q}</b>${m.opts.map(o => `<div class="poll-opt">${o}</div>`).join('')}</div>`;
         } else if(m.audio) {
-            content = `<div class="bubble ${m.whisper ? 'whisper-bubble' : ''}"><audio controls src="${m.audio}" style="width:200px; height:30px;"></audio></div>`;
+            content = `<div class="${bubbleClass}"><audio controls src="${m.audio}" style="width:180px; height:30px;"></audio></div>`;
+        } else if(m.img) {
+            content = `<div class="${bubbleClass}"><img src="${m.img}" style="max-width:100%; border-radius:10px;"></div>`;
         } else {
             content = `<div class="user-label" onclick="startWhisper('${m.uid}', '${m.user}')">${m.user}</div>
-                       <div class="bubble ${m.whisper ? 'whisper-bubble' : ''}">${m.text}</div>`;
+                       <div class="${bubbleClass}">${m.text}</div>`;
         }
         
         div.innerHTML = content;
@@ -204,34 +203,29 @@
         if(!inp.value.trim()) return;
         push(ref(db, 'messages'), {
             text: inp.value, user: myUser, uid: myId,
-            whisper: whisperTarget, time: Date.now()
+            whisper: whisperTo, time: Date.now()
         });
         inp.value = '';
     };
 
     window.startWhisper = (id, name) => {
         if(id === myId) return;
-        whisperTarget = id;
-        whisperTargetName = name;
-        document.getElementById('whisper-bar').style.display = 'flex';
-        document.getElementById('whisper-target').innerText = name;
+        whisperTo = id;
+        document.getElementById('whisper-notice').style.display = 'flex';
+        document.getElementById('target-name').innerText = name;
         document.getElementById('text-input').focus();
     };
 
-    window.cancelWhisper = () => {
-        whisperTarget = null;
-        document.getElementById('whisper-bar').style.display = 'none';
-    };
+    window.cancelWhisper = () => { whisperTo = null; document.getElementById('whisper-notice').style.display = 'none'; };
 
     window.createPoll = () => {
-        const q = prompt("Poll Question:");
+        const q = prompt("Question:");
         const o = prompt("Options (comma separated):");
         if(q && o) push(ref(db, 'messages'), { type: 'poll', q, opts: o.split(','), uid: myId });
     };
 
     window.wipeSystem = () => {
-        const code = prompt("ENTER OVERRIDE CODE TO WIPE CHAT:");
-        if(code === "WAYNE") {
+        if(prompt("ENTER OVERRIDE CODE:") === "WAYNE") {
             remove(ref(db, 'messages'));
             location.reload();
         }
@@ -239,30 +233,32 @@
 
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
 
+    // Image Upload
+    document.getElementById('img-in').onchange = (e) => {
+        const f = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = () => push(ref(db, 'messages'), { img: reader.result, user: myUser, uid: myId, whisper: whisperTo });
+        reader.readAsDataURL(f);
+    };
+
     function setupVoice() {
         const btn = document.getElementById('mic-btn');
         btn.onmousedown = btn.ontouchstart = async (e) => {
             e.preventDefault();
-            audioChunks = [];
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
             mediaRecorder.onstop = () => {
                 const blob = new Blob(audioChunks, { type: 'audio/webm' });
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    push(ref(db, 'messages'), { audio: reader.result, user: myUser, uid: myId, whisper: whisperTarget });
-                };
+                reader.onloadend = () => push(ref(db, 'messages'), { audio: reader.result, user: myUser, uid: myId, whisper: whisperTo });
                 reader.readAsDataURL(blob);
+                audioChunks = [];
             };
             mediaRecorder.start();
             btn.classList.add('recording');
         };
-
-        btn.onmouseup = btn.ontouchend = () => {
-            if(mediaRecorder) mediaRecorder.stop();
-            btn.classList.remove('recording');
-        };
+        btn.onmouseup = btn.ontouchend = () => { if(mediaRecorder) mediaRecorder.stop(); btn.classList.remove('recording'); };
     }
 </script>
 </body>
