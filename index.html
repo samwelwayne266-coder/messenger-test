@@ -3,17 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wayne Core Titan V20</title>
+    <title>Wayne Core Titan V21</title>
     
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Wayne Core">
+    <meta name="theme-color" content="#0b0e14">
+
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Wayne%20Core%20Titan%22,%22short_name%22:%22WayneCore%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22#0b0e14%22,%22theme_color%22:%22#a855f7%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/940/940193.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}">
+
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    
     <style>
         :root {
             --bg: #0b0e14; --card: #1c2128; --text: #e6edf3;
             --primary: #a855f7; --my-msg: #581c87; --other-msg: #2d333b;
             --whisper: #eab308; --danger: #f85149;
         }
-        * { box-sizing: border-box; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* SPLASH SCREEN CSS */
+        #splash-screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .splash-logo { width: 80px; height: 80px; background: var(--primary); border-radius: 20px; box-shadow: 0 0 30px rgba(168, 85, 247, 0.4); animation: pulse-logo 2s infinite; }
+        @keyframes pulse-logo { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
 
         header { 
             height: 60px; padding: 0 15px; background: var(--card); border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -38,10 +56,7 @@
         .mine { align-items: flex-end; }
         .theirs { align-items: flex-start; }
         
-        .bubble { 
-            padding: 10px 14px; border-radius: 18px; font-size: 15px; max-width: 85%;
-            position: relative; word-wrap: break-word; line-height: 1.4;
-        }
+        .bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; max-width: 85%; position: relative; word-wrap: break-word; line-height: 1.4; }
         .mine .bubble { background: var(--my-msg); color: white; border-bottom-right-radius: 2px; }
         .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 2px; }
         
@@ -50,32 +65,29 @@
 
         #whisper-notice { display: none; background: var(--whisper); color: #000; padding: 8px 15px; font-size: 12px; font-weight: bold; justify-content: space-between; align-items: center; }
 
-        #input-area { background: var(--card); padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
+        #input-area { background: var(--card); padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
         .input-bar { background: var(--bg); border-radius: 25px; display: flex; align-items: center; padding: 5px 15px; border: 1px solid #333; gap: 8px; }
         #text-input { flex: 1; background: transparent; border: none; color: white; padding: 10px 0; outline: none; font-size: 16px; }
         
         .btn-icon { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--primary); display: flex; align-items: center; }
         .recording { color: var(--danger); animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* POLL DESIGN V2 */
-        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 15px; padding: 15px; width: 100%; max-width: 300px; margin: 5px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .poll-opt { 
-            position: relative; background: rgba(255,255,255,0.08); margin: 10px 0; border-radius: 10px; 
-            cursor: pointer; overflow: hidden; height: 42px; display: flex; align-items: center; 
-            padding: 0 15px; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .poll-bar { 
-            position: absolute; left: 0; top: 0; bottom: 0; 
-            background: linear-gradient(90deg, rgba(168, 85, 247, 0.6), rgba(168, 85, 247, 0.3));
-            transition: width 0.6s ease; z-index: 1; 
-        }
+        /* POLL DESIGN */
+        .poll-card { background: var(--card); border: 1px solid var(--primary); border-radius: 15px; padding: 15px; width: 100%; max-width: 300px; margin: 5px 0; }
+        .poll-opt { position: relative; background: rgba(255,255,255,0.08); margin: 10px 0; border-radius: 10px; cursor: pointer; overflow: hidden; height: 42px; display: flex; align-items: center; padding: 0 15px; font-size: 14px; }
+        .poll-bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(168, 85, 247, 0.5); transition: width 0.6s ease; z-index: 1; }
         .poll-text { position: relative; z-index: 2; display: flex; justify-content: space-between; width: 100%; color: #fff; font-weight: 600; }
     </style>
 </head>
 <body>
 
-<div id="login-overlay" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center;">
+<div id="splash-screen">
+    <div class="splash-logo"></div>
+    <h1 style="margin-top:20px; font-size:18px; letter-spacing:3px; color:var(--primary);">WAYNE CORE</h1>
+    <p style="font-size:10px; opacity:0.4; letter-spacing:1px;">TITAN V21</p>
+</div>
+
+<div id="login-overlay" style="position:fixed; inset:0; background:#000; z-index:9999; display:none; align-items:center; justify-content:center;">
     <div style="background:var(--card); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--primary); width:90%; max-width:340px;">
         <h2 style="color:var(--primary); margin:0;">Wayne Core</h2>
         <input type="password" id="secret-code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; background:#0b0e14; color:#fff; border:1px solid #333;" placeholder="Secret Code">
@@ -110,8 +122,8 @@
         <div id="input-area">
             <div class="input-bar">
                 <input type="file" id="img-in" style="display:none" accept="image/*">
-                <button onclick="document.getElementById('img-in').click()" class="btn-icon" title="Send Image">🖼️</button>
-                <button id="mic-btn" class="btn-icon" title="Hold for Voice Chat">🎤</button>
+                <button onclick="document.getElementById('img-in').click()" class="btn-icon">🖼️</button>
+                <button id="mic-btn" class="btn-icon">🎤</button>
                 <input id="text-input" placeholder="Message..." autocomplete="off">
                 <button onclick="sendMessage()" style="background:var(--primary); color:white; border:none; padding:10px 18px; border-radius:20px; font-weight:bold;">SEND</button>
             </div>
@@ -141,7 +153,18 @@
     let mediaRecorder;
     let audioChunks = [];
 
-    if(myUser) { document.getElementById('login-overlay').style.display = 'none'; initApp(); }
+    // Handle Splash Screen Removal
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.visibility = 'hidden';
+                if(!myUser) document.getElementById('login-overlay').style.display = 'flex';
+                else initApp();
+            }, 800);
+        }, 2000);
+    });
 
     window.login = () => {
         const c = document.getElementById('secret-code').value;
@@ -162,7 +185,7 @@
         onValue(ref(db, 'online'), snap => {
             const users = snap.val() || {};
             document.getElementById('user-list').innerHTML = Object.entries(users).map(([k,v]) => `
-                <div onclick="startWhisper('${k}', '${v.name}')" style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; font-size:14px;">
+                <div onclick="startWhisper('${k}', '${v.name}')" style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer;">
                     <span style="color:#2ea043;">●</span> ${v.name} ${k === myId ? '(You)' : ''}
                 </div>
             `).join('');
@@ -174,7 +197,6 @@
 
     function renderMsg(key, m) {
         if(m.whisper && m.whisper !== myId && m.uid !== myId) return;
-
         const isMine = m.uid === myId;
         const div = document.createElement('div');
         div.className = `msg-row ${isMine ? 'mine' : 'theirs'}`;
@@ -183,20 +205,14 @@
         let content = '';
 
         if(m.type === 'poll') {
-            const author = m.user || "System";
-            content = `<div class="poll-card" id="poll-${key}">
-                        <div style="font-size:11px; opacity:0.6; margin-bottom:5px;">Poll by ${author}</div>
-                        <b style="font-size:15px; display:block; margin-bottom:10px;">📊 ${m.q}</b>
+            content = `<div class="poll-card">
+                        <div style="font-size:11px; opacity:0.6;">Poll by ${m.user}</div>
+                        <b style="font-size:15px; display:block; margin:8px 0;">📊 ${m.q}</b>
                         <div id="opts-${key}">${renderPollOptions(key, m)}</div>
                        </div>`;
-            
             onValue(ref(db, `messages/${key}/votes`), () => {
                 const optBox = document.getElementById(`opts-${key}`);
-                if(optBox) {
-                    onValue(ref(db, `messages/${key}`), s => {
-                        optBox.innerHTML = renderPollOptions(key, s.val());
-                    }, { onlyOnce: true });
-                }
+                if(optBox) onValue(ref(db, `messages/${key}`), s => { optBox.innerHTML = renderPollOptions(key, s.val()); }, { onlyOnce: true });
             });
         } else if(m.audio) {
             content = `<div class="${bubbleClass}"><audio controls src="${m.audio}" style="width:200px; height:35px;"></audio></div>`;
@@ -206,7 +222,6 @@
             content = `<div class="user-label" onclick="startWhisper('${m.uid}', '${m.user}')">${m.user}</div>
                        <div class="${bubbleClass}">${m.text}</div>`;
         }
-        
         div.innerHTML = content;
         document.getElementById('messages').appendChild(div);
     }
@@ -217,90 +232,59 @@
         return pollData.opts.map((opt, idx) => {
             const count = Object.values(votes).filter(v => v === idx).length;
             const pct = total === 0 ? 0 : Math.round((count / total) * 100);
-            return `
-                <div class="poll-opt" onclick="vote('${pollKey}', ${idx})">
-                    <div class="poll-bar" style="width: ${pct}%"></div>
-                    <div class="poll-text">
-                        <span>${opt}</span>
-                        <span>${pct}%</span>
-                    </div>
-                </div>`;
+            return `<div class="poll-opt" onclick="vote('${pollKey}', ${idx})">
+                <div class="poll-bar" style="width: ${pct}%"></div>
+                <div class="poll-text"><span>${opt}</span><span>${pct}%</span></div>
+            </div>`;
         }).join('');
     }
 
-    window.vote = (key, idx) => {
-        set(ref(db, `messages/${key}/votes/${myId}`), idx);
-    };
-
+    window.vote = (key, idx) => set(ref(db, `messages/${key}/votes/${myId}`), idx);
     window.sendMessage = () => {
         const inp = document.getElementById('text-input');
         if(!inp.value.trim()) return;
-        push(ref(db, 'messages'), {
-            text: inp.value, user: myUser, uid: myId,
-            whisper: whisperTo, time: Date.now()
-        });
+        push(ref(db, 'messages'), { text: inp.value, user: myUser, uid: myId, whisper: whisperTo, time: Date.now() });
         inp.value = '';
     };
-
     window.startWhisper = (id, name) => {
         if(id === myId) return;
         whisperTo = id;
         document.getElementById('whisper-notice').style.display = 'flex';
         document.getElementById('target-name').innerText = name;
-        document.getElementById('text-input').focus();
     };
-
     window.cancelWhisper = () => { whisperTo = null; document.getElementById('whisper-notice').style.display = 'none'; };
-
     window.createPoll = () => {
         const q = prompt("Question:");
         const o = prompt("Options (comma separated):");
-        if(q && o) {
-            push(ref(db, 'messages'), { 
-                type: 'poll', 
-                q: q, 
-                opts: o.split(','), 
-                uid: myId, 
-                user: myUser, // FIXED: Now correctly passing myUser
-                votes: {} 
-            });
-        }
+        if(q && o) push(ref(db, 'messages'), { type: 'poll', q, opts: o.split(','), uid: myId, user: myUser, votes: {} });
     };
-
     window.wipeSystem = () => {
-        if(prompt("OVERRIDE CODE:") === "WAYNE") {
-            remove(ref(db, 'messages'));
-            location.reload();
-        }
+        if(prompt("OVERRIDE CODE:") === "WAYNE") { remove(ref(db, 'messages')); location.reload(); }
     };
-
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
 
     document.getElementById('img-in').onchange = (e) => {
-        const f = e.target.files[0];
         const reader = new FileReader();
         reader.onload = () => push(ref(db, 'messages'), { img: reader.result, user: myUser, uid: myId, whisper: whisperTo });
-        reader.readAsDataURL(f);
+        reader.readAsDataURL(e.target.files[0]);
     };
 
     function setupVoice() {
         const btn = document.getElementById('mic-btn');
         btn.onmousedown = btn.ontouchstart = async (e) => {
             e.preventDefault();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const reader = new FileReader();
-                    reader.onloadend = () => push(ref(db, 'messages'), { audio: reader.result, user: myUser, uid: myId, whisper: whisperTo });
-                    reader.readAsDataURL(blob);
-                    audioChunks = [];
-                };
-                mediaRecorder.start();
-                btn.classList.add('recording');
-            } catch(e) { alert("Microphone access denied."); }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onloadend = () => push(ref(db, 'messages'), { audio: reader.result, user: myUser, uid: myId, whisper: whisperTo });
+                reader.readAsDataURL(blob);
+                audioChunks = [];
+            };
+            mediaRecorder.start();
+            btn.classList.add('recording');
         };
         btn.onmouseup = btn.ontouchend = () => { if(mediaRecorder) mediaRecorder.stop(); btn.classList.remove('recording'); };
     }
