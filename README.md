@@ -1,4 +1,4 @@
-# 🌌 Wayne Core
+# <p align="center">🌌 Wayne Core MESSENGER</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-Active-a855f7?style=for-the-badge" />
