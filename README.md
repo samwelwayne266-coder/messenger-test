@@ -27,7 +27,8 @@ For the best experience on Windows, download the standalone executable.
 
 #### Method 3: Access Through Web
 
-Navigate to the [Live Link](https://samwelwayne266.github.io/Wayne-Core/)
+1. Navigate to the [Live Link](https://samwelwayne266.github.io/Wayne-Core/)
+2. ENJOY!!!
 
 ---
 
