@@ -24,7 +24,6 @@
             overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* CUSTOM SUPREME SCROLLBAR */
         #messages::-webkit-scrollbar { width: 6px; }
         #messages::-webkit-scrollbar-track { background: transparent; }
         #messages::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
@@ -40,7 +39,6 @@
 
         #main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
 
-        /* SIDEBAR LOGIC */
         #sidebar { 
             width: 280px; background: rgba(0,0,0,0.25); 
             border-right: 1px solid rgba(255,255,255,0.05); 
@@ -50,7 +48,6 @@
         #msg-container { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--bg); overflow: hidden; }
         #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
 
-        /* BUBBLE & IMAGE BALANCING */
         .msg-row { display: flex; gap: 12px; margin-bottom: 5px; align-items: flex-end; width: 100%; }
         .mine { flex-direction: row-reverse; }
 
@@ -75,12 +72,10 @@
             display: block; margin: 8px 0; object-fit: contain; background: #000;
         }
 
-        /* POLL UI */
         .poll-card { background: var(--poll-bg); border: 1px solid var(--primary); padding: 15px; border-radius: 15px; margin: 10px 0; width: 100%; max-width: 300px; }
         .poll-opt { background: rgba(255,255,255,0.05); padding: 10px; margin: 8px 0; border-radius: 10px; cursor: pointer; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
         .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.3; transition: width 0.6s ease; }
 
-        /* INPUT AREA & MOBILE FIX */
         #input-panel { 
             padding: 15px; background: var(--card); border-top: 1px solid rgba(255,255,255,0.1);
             padding-bottom: calc(15px + env(safe-area-inset-bottom));
@@ -92,9 +87,7 @@
         #text-input { flex: 1; border: none; padding: 14px 20px; border-radius: 30px; background: var(--bg); color: var(--text); outline: none; font-size: 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
 
         .btn-icon { background: none; border: none; color: var(--primary); font-size: 1.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .btn-icon:disabled { opacity: 0.3; }
 
-        /* MOBILE OVERRIDES */
         @media (max-width: 850px) {
             #sidebar { position: absolute; left: -280px; z-index: 2000; height: 100%; background: var(--card); }
             #sidebar.open { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.8); }
@@ -164,7 +157,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, push, onValue, set, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Your Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyA-doUdzBaHWcQnGtw0KG84EKLwkC_F5Qw",
       authDomain: "blue-chat-3.firebaseapp.com",
@@ -193,6 +185,9 @@
     if(myUser) {
         document.getElementById('login-overlay').style.display='none';
         setupPresence();
+        initMessages();
+        initPolls();
+        initTyping();
     }
 
     window.login = function() {
@@ -203,6 +198,7 @@
         }
     }
 
+    // --- PRESENCE SYSTEM ---
     function setupPresence() {
         const userRef = ref(db, 'online/' + myId);
         set(userRef, { name: myUser, color: myColor, id: myId });
@@ -218,40 +214,43 @@
         });
     }
 
-    // TYPING LOGIC (Firebase Realtime)
-    const typingRef = ref(db, 'typing/' + myId);
-    document.getElementById('text-input').addEventListener('input', () => {
-        set(typingRef, { user: myUser, active: true });
-        clearTimeout(window.typeStopTimer);
-        window.typeStopTimer = setTimeout(() => set(typingRef, { active: false }), 2000);
-    });
+    // --- TYPING INDICATOR ---
+    function initTyping() {
+        const tRef = ref(db, 'typing/' + myId);
+        document.getElementById('text-input').addEventListener('input', () => {
+            set(tRef, { user: myUser, active: true });
+            clearTimeout(window.typeTimer);
+            window.typeTimer = setTimeout(() => set(tRef, { active: false }), 2000);
+        });
+        onValue(ref(db, 'typing'), (snap) => {
+            const data = snap.val() || {};
+            const active = Object.values(data).find(t => t.active && t.user !== myUser);
+            document.getElementById('typing-indicator').innerText = active ? `${active.user} is typing...` : "";
+        });
+    }
 
-    onValue(ref(db, 'typing'), (snapshot) => {
-        const data = snapshot.val() || {};
-        const typing = Object.values(data).find(t => t.active && t.user !== myUser);
-        document.getElementById('typing-indicator').innerText = typing ? `${typing.user} is typing...` : "";
-    });
-
-    // MESSAGE RENDERER
-    const msgRef = ref(db, 'messages');
-    onValue(msgRef, (snapshot) => {
-        document.getElementById('messages').innerHTML = '';
-        const data = snapshot.val();
-        if(data) {
-            Object.keys(data).forEach(key => {
-                const m = data[key]; m.id = key;
-                if(!m.toId || m.toId === myId || m.senderId === myId) {
-                    renderMessage(m);
-                }
-            });
-        }
-    });
+    // --- MESSAGE HANDLING ---
+    function initMessages() {
+        const msgRef = ref(db, 'messages');
+        onValue(msgRef, (snapshot) => {
+            document.getElementById('messages').innerHTML = '';
+            const data = snapshot.val();
+            if(data) {
+                Object.keys(data).forEach(key => {
+                    const m = data[key]; m.id = key;
+                    if(!m.toId || m.toId === myId || m.senderId === myId) {
+                        renderMessage(m);
+                    }
+                });
+            }
+        });
+    }
 
     document.getElementById('chat-form').onsubmit = (e) => {
         e.preventDefault();
         const inp = document.getElementById('text-input');
         if(inp.value.trim()) {
-            push(msgRef, {
+            push(ref(db, 'messages'), {
                 type: 'text', content: inp.value, user: myUser, senderId: myId,
                 avatarColor: myColor, toId: whisperTargetId, reply: activeReply,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -261,12 +260,12 @@
         }
     };
 
-    // MEDIA
+    // --- MEDIA & VOICE ---
     document.getElementById('media-upload').addEventListener('change', function() {
         const file = this.files[0];
         if(file) {
             const reader = new FileReader();
-            reader.onload = e => push(msgRef, {
+            reader.onload = e => push(ref(db, 'messages'), {
                 type: 'image', content: e.target.result, user: myUser, senderId: myId,
                 avatarColor: myColor, toId: whisperTargetId, reply: activeReply,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -276,7 +275,6 @@
         }
     });
 
-    // VOICE
     document.getElementById('mic-trigger').onclick = async () => {
         const btn = document.getElementById('mic-trigger');
         if (!mediaRec || mediaRec.state === "inactive") {
@@ -287,7 +285,7 @@
                 mediaRec.onstop = () => {
                     const blob = new Blob(audioData, { type: 'audio/webm' });
                     const r = new FileReader();
-                    r.onload = e => push(msgRef, { 
+                    r.onload = e => push(ref(db, 'messages'), { 
                         type: 'audio', content: e.target.result, user: myUser, senderId: myId, avatarColor: myColor,
                         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     });
@@ -298,24 +296,31 @@
         } else { mediaRec.stop(); btn.style.color = 'var(--primary)'; }
     };
 
-    // POLLS
-    const pollRef = ref(db, 'polls');
-    window.createPoll = () => {
-        const q = prompt("Enter Poll Question:");
-        const o = prompt("Enter Options (separated by commas):");
-        if(q && o) push(pollRef, { question: q, options: o.split(','), votes: {} });
-    };
+    // --- POLLS ---
+    function initPolls() {
+        onValue(ref(db, 'polls'), (snapshot) => {
+            const polls = snapshot.val();
+            if(polls) Object.keys(polls).forEach(id => renderPoll(id, polls[id]));
+        });
+    }
 
-    onValue(pollRef, (snapshot) => {
-        const polls = snapshot.val();
-        if(polls) Object.keys(polls).forEach(id => renderPoll(id, polls[id]));
-    });
+    window.createPoll = () => {
+        const q = prompt("Question:");
+        const o = prompt("Options (comma separated):");
+        if(q && o) push(ref(db, 'polls'), { question: q, options: o.split(','), votes: {} });
+    };
 
     window.votePoll = (pollId, optIdx) => set(ref(db, `polls/${pollId}/votes/${myId}`), optIdx);
 
-    // UTILS
-    window.purgeChat = () => { if(confirm("Wipe everything?")) { remove(ref(db, 'messages')); remove(ref(db, 'polls')); } };
+    // --- UI HELPERS ---
+    window.purgeChat = () => { if(confirm("Purge Network?")) { remove(ref(db, 'messages')); remove(ref(db, 'polls')); } };
     window.deleteMsg = (id) => remove(ref(db, 'messages/' + id));
+    window.toggleTheme = () => {
+        const isD = document.body.getAttribute('data-theme') === 'dark';
+        document.body.setAttribute('data-theme', isD ? 'light' : 'dark');
+        document.getElementById('thBtn').innerText = isD ? 'DARK' : 'LIGHT';
+    };
+
     window.setWhisper = (id, name) => {
         if(id === myId) return; whisperTargetId = id;
         document.getElementById('whisper-preview').style.display = 'flex';
@@ -328,11 +333,6 @@
         document.getElementById('reply-info').innerText = "Replying to " + u;
     };
     window.cancelReply = () => { activeReply = null; document.getElementById('reply-preview').style.display='none'; };
-    window.toggleTheme = () => {
-        const isD = document.body.getAttribute('data-theme') === 'dark';
-        document.body.setAttribute('data-theme', isD ? 'light' : 'dark');
-        document.getElementById('thBtn').innerText = isD ? 'DARK' : 'LIGHT';
-    };
 
     function renderMessage(d) {
         const row = document.createElement('div');
