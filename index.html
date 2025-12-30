@@ -79,7 +79,7 @@
             <span style="font-weight:900; letter-spacing:1px;">WAYNE CORE</span>
         </div>
         <div style="display:flex; gap:10px;">
-            <button onclick="requestNotify()" style="background:white; color:black; border:none; padding:5px 12px; border-radius:10px; font-size:10px; font-weight:bold; cursor:pointer;">🔔 NOTIFY</button>
+            <button onclick="requestNotify()" style="background:white; color:black; border:none; padding:5px 12px; border-radius:10px; font-size:10px; font-weight:bold; cursor:pointer;">🔔 ENABLE</button>
             <button onclick="createPoll()" style="background:none; border:1px solid white; color:white; padding:5px; border-radius:5px; font-size:10px; cursor:pointer;">+ POLL</button>
             <button onclick="toggleTheme()" id="thBtn" style="background:none; border:1px solid white; color:white; padding:5px; border-radius:5px; font-size:10px; cursor:pointer;">LIGHT</button>
             <button onclick="purgeChat()" style="color:#ff4444; background:none; border:none; font-size:10px; cursor:pointer; font-weight:bold;">PURGE</button>
@@ -151,6 +151,18 @@
         initMessages();
         initPolls();
         initTyping();
+        registerServiceWorker();
+    }
+
+    async function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                console.log('SW Registered:', registration);
+            } catch (err) {
+                console.error('SW Registration Failed:', err);
+            }
+        }
     }
 
     window.login = () => {
@@ -158,7 +170,6 @@
         if(val) { localStorage.setItem('wc_apex_user', val); location.reload(); }
     };
 
-    // --- NOTIFICATIONS ---
     window.requestNotify = async () => {
         try {
             const permission = await Notification.requestPermission();
@@ -176,13 +187,11 @@
         new Notification(payload.notification.title, { body: payload.notification.body });
     });
 
-    // --- CHARACTER COUNT ---
     document.getElementById('text-input').addEventListener('input', (e) => {
         const len = e.target.value.length;
         document.getElementById('char-count').innerText = `${len}/500`;
     });
 
-    // --- PRESENCE & TYPING ---
     function setupPresence() {
         const userRef = ref(db, 'online/' + myId);
         set(userRef, { name: myUser, color: myColor, id: myId });
@@ -210,7 +219,6 @@
         });
     }
 
-    // --- MESSAGING LOGIC ---
     function initMessages() {
         onValue(ref(db, 'messages'), (snap) => {
             const container = document.getElementById('messages');
@@ -239,7 +247,6 @@
         }
     };
 
-    // --- MEDIA & VOICE ---
     document.getElementById('media-upload').onchange = function() {
         const reader = new FileReader();
         reader.onload = e => push(ref(db, 'messages'), { type: 'image', content: e.target.result, user: myUser, senderId: myId, avatarColor: myColor });
@@ -261,7 +268,6 @@
         } else { mediaRec.stop(); document.getElementById('mic-trigger').style.color = 'var(--primary)'; }
     };
 
-    // --- POLLS ---
     window.createPoll = () => {
         const q = prompt("Question:");
         const o = prompt("Options (comma separated):");
@@ -275,7 +281,6 @@
         });
     }
 
-    // --- UI RENDERING ---
     function renderMessage(d) {
         const row = document.createElement('div');
         row.className = `msg-row ${d.senderId === myId ? 'mine' : 'theirs'}`;
