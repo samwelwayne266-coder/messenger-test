@@ -2,134 +2,150 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Wayne Core Titan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <title>Wayne Core Omni-God V10</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({ appId: "3504bc48-2267-4c0b-817d-faf41d5057c2" });
-      });
+      OneSignalDeferred.push(async (OS) => { await OS.init({ appId: "3504bc48-2267-4c0b-817d-faf41d5057c2" }); });
     </script>
 
     <style>
         :root {
-            --bg: #09090b; --card: #18181b; --text: #fafafa;
-            --primary: #a855f7; --my-msg: #a855f7; --other-msg: #27272a;
-            --whisper: #eab308; --danger: #ef4444;
+            --bg: #0b0e14; --card: #1c2128; --text: #adbac7;
+            --primary: #a855f7; --my-msg: #3e334a; --other-msg: #22272e;
+            --whisper: #eab308; --danger: #f85149; --read: #3fb950;
         }
         [data-theme="light"] {
             --bg: #f4f4f5; --card: #ffffff; --text: #09090b;
             --primary: #7c3aed; --my-msg: #7c3aed; --other-msg: #e4e4e7;
+            --my-text: white;
         }
-        * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* Glassmorphism Header */
+
+        /* --- UI COMPONENTS --- */
         header { 
-            padding: 15px 20px; 
-            background: rgba(168, 85, 247, 0.8); 
-            backdrop-filter: blur(10px);
-            display: flex; justify-content: space-between; align-items: center; 
-            z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 16px; background: var(--card); border-bottom: 1px solid #444c56;
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
         }
-
-        #main-layout { display: flex; flex: 1; overflow: hidden; }
         
-        /* Expandable Sidebar */
         #sidebar { 
-            width: 280px; background: rgba(0,0,0,0.2); 
-            border-right: 1px solid rgba(255,255,255,0.05); 
-            display: flex; flex-direction: column; transition: 0.3s;
+            width: 260px; background: var(--card); border-right: 1px solid #444c56;
+            position: absolute; left: -260px; height: 100%; transition: 0.3s; z-index: 50; display: flex; flex-direction: column;
         }
+        #sidebar.open { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
 
-        /* Message Area */
-        #msg-container { flex: 1; display: flex; flex-direction: column; position: relative; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        
-        .msg-row { display: flex; gap: 10px; margin-bottom: 4px; align-items: flex-end; }
-        .mine { flex-direction: row-reverse; }
+        #msg-container { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+
+        /* --- BUBBLES & CONTENT --- */
+        .msg-row { display: flex; gap: 8px; max-width: 85%; align-self: flex-start; animation: fadeIn 0.2s; }
+        .mine { align-self: flex-end; flex-direction: row-reverse; }
         
         .bubble { 
-            max-width: 75%; padding: 12px 16px; border-radius: 20px; 
-            font-size: 15px; position: relative; transition: transform 0.2s;
-            cursor: pointer;
+            padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4;
+            position: relative; word-wrap: break-word; cursor: pointer; min-width: 60px;
         }
-        .mine .bubble { background: var(--my-msg); border-bottom-right-radius: 4px; color: white; }
-        .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 4px; }
+        .mine .bubble { background: var(--my-msg); color: var(--my-text, #fff); border-bottom-right-radius: 4px; }
+        .theirs .bubble { background: var(--other-msg); border-bottom-left-radius: 4px; border: 1px solid #444c56; }
         
-        /* Reactions */
+        .reply-box { 
+            background: rgba(0,0,0,0.2); border-left: 3px solid var(--primary); 
+            padding: 4px 8px; margin-bottom: 6px; font-size: 11px; border-radius: 4px; opacity: 0.8;
+        }
+        
+        .bubble img { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
+        audio { height: 32px; max-width: 200px; margin-top: 5px; }
+
+        /* --- METADATA (Time + Read Receipts) --- */
+        .meta { 
+            display: flex; justify-content: flex-end; align-items: center; gap: 4px; 
+            font-size: 9px; opacity: 0.6; margin-top: 4px; 
+        }
+        .read-icon { font-size: 11px; font-weight: bold; }
+        .read-icon.seen { color: var(--read); }
+
+        /* --- REACTIONS --- */
         .reactions { 
-            display: flex; gap: 4px; margin-top: -8px; margin-left: 10px;
-            background: var(--card); border-radius: 10px; padding: 2px 6px;
-            font-size: 12px; border: 1px solid rgba(255,255,255,0.1);
-            width: fit-content;
+            position: absolute; bottom: -12px; right: 0; 
+            background: var(--card); border: 1px solid #444c56; 
+            border-radius: 10px; padding: 2px 6px; font-size: 10px; display: flex; gap: 2px;
         }
 
-        /* Input Panel */
-        #input-panel { padding: 15px; background: var(--card); border-top: 1px solid rgba(255,255,255,0.1); }
-        .toolbar { display: flex; gap: 10px; align-items: center; }
-        #text-input { 
-            flex: 1; padding: 12px 18px; border-radius: 25px; 
-            border: none; background: var(--bg); color: white; outline: none; 
-        }
+        /* --- POLLS --- */
+        .poll-card { background: rgba(168, 85, 247, 0.1); border: 1px solid var(--primary); padding: 12px; border-radius: 12px; width: 100%; margin-bottom: 10px; }
+        .poll-opt { background: rgba(255,255,255,0.05); padding: 8px; margin: 5px 0; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; }
+        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.3; transition: 0.5s; }
+
+        /* --- INPUT AREA --- */
+        #input-panel { padding: 10px; background: var(--card); border-top: 1px solid #444c56; }
+        .input-wrapper { background: var(--bg); border-radius: 24px; padding: 4px 8px; display: flex; align-items: center; border: 1px solid #444c56; }
+        #text-input { flex: 1; background: transparent; border: none; color: var(--text); padding: 10px; outline: none; font-size: 16px; }
+        .action-bar { display: none; background: #2d333b; padding: 8px 15px; border-top: 1px solid var(--primary); justify-content: space-between; font-size: 12px; }
         
-        .btn-icon { background: none; border: none; color: var(--primary); font-size: 1.4rem; cursor: pointer; opacity: 0.8; }
-        .btn-icon:hover { opacity: 1; transform: scale(1.1); }
-
-        /* Overlays */
+        /* --- LOGIN & UTILS --- */
         #login-overlay { position: fixed; inset: 0; background: #000; z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: var(--card); padding: 40px; border-radius: 25px; text-align: center; border: 1px solid var(--primary); width: 90%; max-width: 380px; }
-        
-        audio { height: 35px; width: 200px; margin-top: 5px; border-radius: 10px; }
+        .login-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--primary); width: 85%; max-width: 320px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body data-theme="dark">
 
 <div id="login-overlay">
-    <div class="login-card">
-        <h1 style="color:var(--primary); margin-bottom: 5px;">WAYNE CORE</h1>
-        <p style="font-size: 12px; opacity: 0.6; margin-bottom: 25px;">TITAN PROTOCOL V8</p>
-        <input type="password" id="secret-input" placeholder="Secret Key (WAYNE)" style="width:100%; padding:15px; border-radius:12px; margin-bottom:10px; background:#000; color:#fff; border:1px solid #333; text-align:center;">
-        <input type="text" id="user-input" placeholder="Display Name" maxlength="12" style="width:100%; padding:15px; border-radius:12px; margin-bottom:20px; background:#000; color:#fff; border:1px solid #333; text-align:center;">
-        <button onclick="login()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">AUTHENTICATE</button>
+    <div class="login-box">
+        <h2 style="color:var(--primary); margin:0 0 5px 0;">WAYNE CORE</h2>
+        <small style="opacity:0.5; display:block; margin-bottom:20px;">OMNI-GOD V10</small>
+        <input type="password" id="secret-code" placeholder="Secret Code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:none; background:#0b0e14; color:white; text-align:center;">
+        <input type="text" id="username" placeholder="Codename" maxlength="12" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px; border:none; background:#0b0e14; color:white; text-align:center;">
+        <button onclick="login()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold;">INITIALIZE</button>
     </div>
 </div>
 
 <header>
     <div style="display:flex; align-items:center; gap:12px;">
-        <div id="online-indicator" style="width:10px; height:10px; background:#10b981; border-radius:50%; box-shadow: 0 0 10px #10b981;"></div>
-        <span style="font-weight:900; letter-spacing:1.5px; text-transform:uppercase;">Wayne Core</span>
+        <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:none; color:var(--text); font-size:22px;">☰</button>
+        <b style="letter-spacing:1px;">WAYNE CORE</b>
+        <div id="status-dot" style="width:8px; height:8px; background:#3fb950; border-radius:50%; box-shadow: 0 0 8px #3fb950;"></div>
     </div>
-    <div style="display:flex; gap:15px;">
-        <button onclick="toggleTheme()" class="btn-icon" style="font-size: 1rem;">🌓</button>
-        <button onclick="purgeChat()" style="color:white; background:var(--danger); border:none; padding: 5px 10px; border-radius:5px; font-size:10px; font-weight:bold; cursor:pointer;">PURGE</button>
+    <div style="display:flex; gap:10px;">
+        <button onclick="toggleTheme()" style="background:none; border:1px solid #444c56; color:var(--text); padding:4px 8px; border-radius:6px; font-size:10px;">🌓</button>
+        <button onclick="purgeChat()" style="background:var(--danger); border:none; color:white; padding:4px 8px; border-radius:6px; font-size:10px; font-weight:bold;">PURGE</button>
     </div>
 </header>
 
 <div id="main-layout">
     <div id="sidebar">
-        <div style="padding:20px; font-size:12px; font-weight:bold; color:var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05);">ACTIVE USERS</div>
+        <div style="padding:15px; font-weight:bold; color:var(--primary); border-bottom:1px solid #444c56;">ACTIVE NODES</div>
         <div id="user-list" style="flex:1; overflow-y:auto;"></div>
+        <button onclick="createPoll()" style="margin:10px; padding:10px; background:rgba(168,85,247,0.2); border:1px solid var(--primary); color:var(--primary); border-radius:8px;">+ CREATE POLL</button>
     </div>
     
     <div id="msg-container">
         <div id="messages"></div>
-        <div id="typing-indicator" style="padding:5px 20px; font-size:11px; color:var(--primary); font-style:italic; height:20px;"></div>
+        <div id="typing-indicator" style="padding:0 20px; font-size:10px; height:15px; color:var(--primary); font-style:italic;"></div>
         
+        <div id="reply-preview" class="action-bar">
+            <span>Replying to <b id="reply-user"></b></span>
+            <button onclick="cancelReply()" style="background:none; border:none; color:var(--danger);">✕</button>
+        </div>
+        <div id="whisper-preview" class="action-bar" style="background:var(--whisper); color:black;">
+            <span id="whisper-info"></span>
+            <button onclick="cancelWhisper()" style="background:none; border:none; color:black;">✕</button>
+        </div>
+
         <div id="input-panel">
-            <div id="preview-area" style="display:none; padding-bottom:10px; font-size:12px; color:var(--primary); display:flex; justify-content:space-between;">
-                <span id="preview-text"></span>
-                <button onclick="cancelAction()" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
+            <div class="input-wrapper">
+                <input type="file" id="file-in" style="display:none" accept="image/*">
+                <button onclick="document.getElementById('file-in').click()" style="background:none; border:none; font-size:18px; cursor:pointer;">🖼️</button>
+                <button id="rec-btn" style="background:none; border:none; font-size:18px; cursor:pointer;">🎙️</button>
+                
+                <input id="text-input" placeholder="Secure Message..." autocomplete="off" maxlength="500">
+                <span id="char-counter" style="font-size:10px; color:#666; padding-right:5px;">0/500</span>
+                
+                <button onclick="sendMessage()" style="background:none; border:none; font-size:18px; cursor:pointer;">🚀</button>
             </div>
-            <form id="chat-form" class="toolbar">
-                <input type="file" id="file-input" style="display:none" accept="image/*">
-                <button type="button" class="btn-icon" onclick="document.getElementById('file-input').click()">🖼️</button>
-                <button type="button" id="record-btn" class="btn-icon">🎙️</button>
-                <input id="text-input" placeholder="Type a secure message..." autocomplete="off">
-                <button type="submit" class="btn-icon">🚀</button>
-            </form>
         </div>
     </div>
 </div>
@@ -138,7 +154,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, push, onValue, set, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    const firebaseConfig = {
+    const config = {
       apiKey: "AIzaSyBm_1W_5MRFJEOJZ4-6itgacgSon3DG-H0",
       authDomain: "supreme-chat-22cf4.firebaseapp.com",
       databaseURL: "https://supreme-chat-22cf4-default-rtdb.firebaseio.com",
@@ -148,178 +164,206 @@
       appId: "1:475930341104:web:f3ee96117523bb914c5c35"
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app = initializeApp(config);
     const db = getDatabase(app);
-    
+
+    // --- STATE ---
     const SECRET = "WAYNE";
-    let myUser = localStorage.getItem('wc_apex_user');
-    let myColor = localStorage.getItem('wc_apex_color') || '#' + Math.floor(Math.random()*16777215).toString(16);
-    const myId = "uid_" + Math.random().toString(36).substr(2, 7);
-    
-    let whisperTarget = null;
-    let mediaRecorder, audioChunks = [];
+    const myId = "node_" + Math.random().toString(36).substr(2, 6);
+    let myUser = localStorage.getItem('wc_omni_user');
+    let activeReply = null, whisperTarget = null;
+    let mediaRec, audioChunks = [];
 
     if(myUser) {
         document.getElementById('login-overlay').style.display='none';
-        setupApp();
+        initApp();
     }
 
     window.login = () => {
-        const c = document.getElementById('secret-input').value.trim();
-        const u = document.getElementById('user-input').value.trim();
-        if(c === SECRET && u) {
-            localStorage.setItem('wc_apex_user', u);
-            localStorage.setItem('wc_apex_color', myColor);
+        const code = document.getElementById('secret-code').value;
+        const user = document.getElementById('username').value.trim();
+        if(code === SECRET && user) {
+            localStorage.setItem('wc_omni_user', user);
             location.reload();
         } else { alert("ACCESS DENIED"); }
     };
 
-    async function sendPush(msg) {
-        if(whisperTarget) return;
-        const KEY = "os_v2_app_guclysbcm5gaxal57l2b2ucxyipnvwbknj4uqcfjtiq7ngm3a5kpfzmqxvl5arjwul577o4s4eaxsppypzlmjo45totbvf6ewfnv24a";
-        try {
-            await fetch("https://onesignal.com/api/v1/notifications", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Basic " + KEY },
-                body: JSON.stringify({
-                    app_id: "3504bc48-2267-4c0b-817d-faf41d5057c2",
-                    included_segments: ["Total Subscriptions"],
-                    headings: { "en": "Wayne Core: " + myUser },
-                    contents: { "en": msg }
-                })
-            });
-        } catch(e){}
-    }
-
-    function setupApp() {
-        // Presence Logic
+    function initApp() {
+        // 1. Presence
         const pRef = ref(db, 'online/' + myId);
-        set(pRef, { name: myUser, color: myColor });
+        set(pRef, { name: myUser });
         onDisconnect(pRef).remove();
-        
         onValue(ref(db, 'online'), snap => {
-            const list = snap.val() || {};
-            document.getElementById('user-list').innerHTML = Object.entries(list).map(([id, u]) => `
-                <div onclick="setWhisper('${id}', '${u.name}')" style="padding:15px 20px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,0.02);">
-                    <div style="width:8px; height:8px; background:#10b981; border-radius:50%;"></div>
-                    <span>${u.name} ${id === myId ? '(You)' : ''}</span>
-                </div>
+            document.getElementById('user-list').innerHTML = Object.entries(snap.val()||{}).map(([k,v]) => `
+                <div onclick="setWhisper('${k}','${v.name}')" style="padding:10px; cursor:pointer; border-bottom:1px solid #333;">🟢 ${v.name}</div>
             `).join('');
         });
 
-        // Message Sync
+        // 2. Messages & Read Receipts
         onValue(ref(db, 'messages'), snap => {
-            const container = document.getElementById('messages');
-            container.innerHTML = '';
-            const data = snap.val();
-            if(data) {
-                Object.entries(data).forEach(([key, m]) => {
-                    if(!m.toId || m.toId === myId || m.senderId === myId) renderMsg(key, m);
-                });
-                container.scrollTop = container.scrollHeight;
-            }
+            const list = document.getElementById('messages');
+            list.innerHTML = '';
+            snap.forEach(child => {
+                const m = child.val();
+                if(!m.toId || m.toId === myId || m.uid === myId) {
+                    renderMsg(child.key, m);
+                    // Mark as Read if not mine
+                    if(m.uid !== myId && (!m.readBy || !m.readBy[myId])) {
+                        update(ref(db, `messages/${child.key}/readBy`), { [myId]: true });
+                    }
+                }
+            });
+            // 3. Polls
+            onValue(ref(db, 'polls'), pSnap => {
+                pSnap.forEach(pChild => renderPoll(pChild.key, pChild.val()));
+            });
+            list.scrollTop = list.scrollHeight;
         });
 
-        // Typing Indicator
+        // 4. Typing
         const tRef = ref(db, 'typing/' + myId);
         document.getElementById('text-input').oninput = (e) => {
-            set(tRef, { name: myUser, typing: e.target.value.length > 0 });
+            const len = e.target.value.length;
+            document.getElementById('char-counter').innerText = len + "/500";
+            set(tRef, { name: myUser, active: len > 0 });
             clearTimeout(window.tTime);
-            window.tTime = setTimeout(() => set(tRef, { typing: false }), 2000);
+            window.tTime = setTimeout(() => set(tRef, { active: false }), 2000);
         };
         onValue(ref(db, 'typing'), snap => {
-            const typing = Object.values(snap.val()||{}).find(t => t.typing && t.name !== myUser);
-            document.getElementById('typing-indicator').innerText = typing ? `${typing.name} is typing...` : '';
+            const t = Object.values(snap.val()||{}).find(x => x.active && x.name !== myUser);
+            document.getElementById('typing-indicator').innerText = t ? `${t.name} is typing...` : "";
         });
     }
 
+    // --- RENDERING ---
     function renderMsg(key, m) {
-        const row = document.createElement('div');
-        row.className = `msg-row ${m.senderId === myId ? 'mine' : 'theirs'}`;
+        const isMine = m.uid === myId;
+        const seenCount = m.readBy ? Object.keys(m.readBy).length : 0;
+        const ticks = seenCount > 0 ? '✓✓' : '✓';
+        const tickClass = seenCount > 0 ? 'read-icon seen' : 'read-icon';
         
-        let contentHtml = m.content;
-        if(m.type === 'audio') contentHtml = `<audio controls src="${m.audio}"></audio>`;
-        if(m.image) contentHtml = `<img src="${m.image}" style="max-width:200px; border-radius:10px; display:block; margin-bottom:5px;">` + m.content;
+        const div = document.createElement('div');
+        div.className = `msg-row ${isMine ? 'mine' : ''}`;
+        
+        let content = m.text || '';
+        if(m.img) content += `<img src="${m.img}">`;
+        if(m.audio) content += `<audio controls src="${m.audio}"></audio>`;
 
-        row.innerHTML = `
-            <div class="bubble" style="${m.toId ? 'border: 1px dashed var(--whisper);' : ''}" oncontextmenu="deleteMsg('${key}', '${m.senderId}'); return false;">
-                <small style="display:block; opacity:0.5; font-size:10px;">${m.toId ? '🔒 Whisper' : m.user}</small>
-                ${contentHtml}
-                ${m.reactions ? `<div class="reactions">${Object.keys(m.reactions).join(' ')}</div>` : ''}
+        div.innerHTML = `
+            <div class="bubble" onclick="msgClick('${key}', '${m.uid}', '${m.user}', '${m.text||'media'}')">
+                <small style="opacity:0.5; font-size:10px; display:block;">${m.toId ? '🔒 Whisper' : m.user}</small>
+                ${m.reply ? `<div class="reply-box"><b>@${m.reply.user}:</b> ${m.reply.text}</div>` : ''}
+                <div>${content}</div>
+                
+                <div class="meta">
+                    <span>${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                    ${isMine ? `<span class="${tickClass}">${ticks}</span>` : ''}
+                </div>
+                
+                ${m.reactions ? `<div class="reactions">${Object.keys(m.reactions).join('')}</div>` : ''}
             </div>
         `;
-        
-        row.onclick = () => addReaction(key);
-        document.getElementById('messages').appendChild(row);
+        document.getElementById('messages').appendChild(div);
     }
 
-    document.getElementById('chat-form').onsubmit = (e) => {
-        e.preventDefault();
+    function renderPoll(key, p) {
+        const total = p.votes ? Object.keys(p.votes).length : 0;
+        const div = document.createElement('div');
+        div.className = 'poll-card';
+        div.innerHTML = `<b style="color:var(--primary)">📊 ${p.q}</b>` + p.opts.map((o, i) => {
+            const count = p.votes ? Object.values(p.votes).filter(v => v === i).length : 0;
+            const pct = total ? Math.round((count/total)*100) : 0;
+            return `<div class="poll-opt" onclick="vote('${key}', ${i})">
+                <div class="poll-bar" style="width:${pct}%"></div>
+                <div style="position:relative; z-index:2; display:flex; justify-content:space-between;">
+                    <span>${o}</span><span>${count} (${pct}%)</span>
+                </div>
+            </div>`;
+        }).join('');
+        document.getElementById('messages').appendChild(div);
+    }
+
+    // --- ACTIONS ---
+    window.sendMessage = () => {
         const inp = document.getElementById('text-input');
         if(inp.value.trim()) {
-            const msg = inp.value;
-            push(ref(db, 'messages'), { 
-                content: msg, user: myUser, senderId: myId, toId: whisperTarget 
+            push(ref(db, 'messages'), {
+                text: inp.value, user: myUser, uid: myId,
+                toId: whisperTarget, reply: activeReply, time: Date.now()
             });
-            sendPush(msg);
-            inp.value = ''; cancelAction();
+            sendPush(inp.value);
+            inp.value = ''; cancelReply(); cancelWhisper();
         }
     };
 
-    // Voice Notes
-    const recBtn = document.getElementById('record-btn');
-    recBtn.onclick = async () => {
-        if(!mediaRecorder || mediaRecorder.state === 'inactive') {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                const reader = new FileReader();
-                reader.onload = () => {
-                    push(ref(db, 'messages'), { type: 'audio', audio: reader.result, user: myUser, senderId: myId });
-                    sendPush("🎤 Sent a voice note");
-                };
-                reader.readAsDataURL(blob);
-                audioChunks = [];
-            };
-            mediaRecorder.start();
-            recBtn.innerText = '🛑';
+    window.msgClick = (key, uid, user, text) => {
+        if(uid === myId) {
+            if(confirm("Delete message?")) remove(ref(db, `messages/${key}`));
         } else {
-            mediaRecorder.stop();
-            recBtn.innerText = '🎙️';
+            if(confirm("Reply or React?\nOK = Reply\nCancel = React")) {
+                activeReply = { user, text: text.substring(0,30)+'...' };
+                document.getElementById('reply-preview').style.display = 'flex';
+                document.getElementById('reply-user').innerText = user;
+            } else {
+                const emo = prompt("Emoji:");
+                if(emo) update(ref(db, `messages/${key}/reactions`), { [emo]: true });
+            }
         }
     };
 
-    // Images
-    document.getElementById('file-input').onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            push(ref(db, 'messages'), { image: reader.result, content: "Shared a photo", user: myUser, senderId: myId });
-            sendPush("🖼️ Shared a photo");
-        };
-        reader.readAsDataURL(e.target.files[0]);
+    // --- MEDIA ---
+    document.getElementById('file-in').onchange = e => {
+        const r = new FileReader();
+        r.onload = () => push(ref(db, 'messages'), { img: r.result, user: myUser, uid: myId, time: Date.now() });
+        r.readAsDataURL(e.target.files[0]);
+    };
+    
+    document.getElementById('rec-btn').onclick = async () => {
+        if(!mediaRec || mediaRec.state === 'inactive') {
+            const s = await navigator.mediaDevices.getUserMedia({audio:true});
+            mediaRec = new MediaRecorder(s);
+            mediaRec.ondataavailable = e => audioChunks.push(e.data);
+            mediaRec.onstop = () => {
+                const b = new Blob(audioChunks);
+                const r = new FileReader();
+                r.onload = () => push(ref(db, 'messages'), { audio: r.result, user: myUser, uid: myId, time: Date.now() });
+                r.readAsDataURL(b); audioChunks=[];
+            };
+            mediaRec.start();
+            document.getElementById('rec-btn').innerText = '🟥';
+        } else {
+            mediaRec.stop();
+            document.getElementById('rec-btn').innerText = '🎙️';
+        }
     };
 
-    window.addReaction = (key) => {
-        const reaction = prompt("Enter an emoji reaction:");
-        if(reaction) update(ref(db, `messages/${key}/reactions`), { [reaction]: true });
+    // --- UTILS ---
+    window.createPoll = () => {
+        const q = prompt("Poll Question:");
+        const o = prompt("Options (comma separated):");
+        if(q && o) push(ref(db, 'polls'), { q, opts: o.split(','), votes: {} });
     };
-
-    window.deleteMsg = (key, sid) => {
-        if(sid === myId && confirm("Delete message?")) remove(ref(db, `messages/${key}`));
+    window.vote = (k, i) => update(ref(db, `polls/${k}/votes`), { [myId]: i });
+    
+    window.setWhisper = (id, name) => {
+        whisperTarget = id;
+        document.getElementById('whisper-preview').style.display='flex';
+        document.getElementById('whisper-info').innerText = "🔒 Whispering to " + name;
     };
+    
+    async function sendPush(msg) {
+        if(whisperTarget) return;
+        try { await fetch("https://onesignal.com/api/v1/notifications", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "Authorization": "Basic os_v2_app_guclysbcm5gaxal57l2b2ucxyipnvwbknj4uqcfjtiq7ngm3a5kpfzmqxvl5arjwul577o4s4eaxsppypzlmjo45totbvf6ewfnv24a"},
+            body: JSON.stringify({ app_id: "3504bc48-2267-4c0b-817d-faf41d5057c2", included_segments: ["Total Subscriptions"], contents: {"en": `${myUser}: ${msg}`} })
+        }); } catch(e){}
+    }
 
-    window.setWhisper = (id, name) => { 
-        if(id === myId) return;
-        whisperTarget = id; 
-        document.getElementById('preview-area').style.display = 'flex';
-        document.getElementById('preview-text').innerText = "🔒 Whispering to " + name;
-    };
-
-    window.cancelAction = () => { whisperTarget = null; document.getElementById('preview-area').style.display = 'none'; };
-    window.toggleTheme = () => document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-    window.purgeChat = () => { if(confirm("Purge Network?")) remove(ref(db, 'messages')); };
+    window.cancelReply = () => { activeReply=null; document.getElementById('reply-preview').style.display='none'; };
+    window.cancelWhisper = () => { whisperTarget=null; document.getElementById('whisper-preview').style.display='none'; };
+    window.toggleTheme = () => document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark');
+    window.purgeChat = () => { if(confirm("NUKE NETWORK?")) { remove(ref(db, 'messages')); remove(ref(db, 'polls')); } };
 </script>
 </body>
 </html>
