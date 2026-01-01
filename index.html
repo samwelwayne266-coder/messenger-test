@@ -6,7 +6,7 @@
     
     <title>Wayne Core</title>
     <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
-    <link rel="icon" href="./favicon.png" type="image/png">
+    <link rel="manifest" href="manifest.json">
     
     <meta name="apple-mobile-web-app-title" content="Wayne Core">
     <meta name="application-name" content="Wayne Core">
@@ -153,7 +153,7 @@ import {
   set, remove, onDisconnect, update
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-/* ================= DOM SAFE REFERENCES ================= */
+/* ================= DOM SAFE ================= */
 const $ = id => document.getElementById(id);
 
 const splashScreen  = $("splash-screen");
@@ -167,30 +167,29 @@ const micBtn        = $("mic-btn");
 const statusDot     = $("status-dot");
 const whisperNotice = $("whisper-notice");
 const targetName    = $("target-name");
+const sidebar       = $("sidebar");
 
 /* ================= FIREBASE ================= */
-const config = {
+const firebaseConfig = {
   apiKey: "AIzaSyBm_1W_5MRFJEOJZ4-6itgacgSon3DG-H0",
   authDomain: "supreme-chat-22cf4.firebaseapp.com",
   databaseURL: "https://supreme-chat-22cf4-default-rtdb.firebaseio.com",
   projectId: "supreme-chat-22cf4",
-  storageBucket: "supreme-chat-22cf4.firebasestorage.app",
+  storageBucket: "supreme-chat-22cf4.appspot.com",
   messagingSenderId: "475930341104",
   appId: "1:475930341104:web:f3ee96117523bb914c5c35"
 };
 
-const app = initializeApp(config);
+const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /* ================= USER ================= */
-let myId = localStorage.getItem("wc_uid");
-if (!myId) {
-  myId = "usr_" + Math.random().toString(36).slice(2, 10);
-  localStorage.setItem("wc_uid", myId);
-}
-let myUser = localStorage.getItem("wc_user_final");
+let myId = localStorage.getItem("wc_uid") || ("u_" + Math.random().toString(36).slice(2, 10));
+localStorage.setItem("wc_uid", myId);
+
+let myUser = localStorage.getItem("wc_user");
 let whisperTo = null;
-let rendered = new Set();
+const rendered = new Set();
 
 /* ================= SPLASH ================= */
 window.onload = () => {
@@ -201,15 +200,13 @@ window.onload = () => {
       if (!myUser) loginOverlay.style.display = "flex";
       else init();
     }, 800);
-  }, 2000);
+  }, 1800);
 };
 
 /* ================= LOGIN ================= */
 window.login = () => {
-  const c = secretInput.value;
-  const n = usernameInput.value.trim();
-  if (c === "WAYNE" && n) {
-    localStorage.setItem("wc_user_final", n);
+  if (secretInput.value === "WAYNE" && usernameInput.value.trim()) {
+    localStorage.setItem("wc_user", usernameInput.value.trim());
     location.reload();
   }
 };
@@ -221,138 +218,104 @@ function init() {
 
   onValue(ref(db, "online"), snap => {
     const users = snap.val() || {};
-    userList.innerHTML = Object.entries(users).map(([k, v]) => `
-      <div onclick="startWhisper('${k}','${v.name}')"
-           style="padding:15px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;">
-        <span style="color:#2ea043;">●</span>
-        ${v.name}${k === myId ? " (You)" : ""}
+    userList.innerHTML = Object.entries(users).map(([id, u]) => `
+      <div onclick="startWhisper('${id}','${u.name}')">
+        🟢 ${u.name}${id === myId ? " (You)" : ""}
       </div>
     `).join("");
   });
 
   onChildAdded(ref(db, "messages"), snap => {
-    if (rendered.has(snap.key)) return;
-    rendered.add(snap.key);
-    renderMessage(snap.key, snap.val());
+    if (!rendered.has(snap.key)) {
+      rendered.add(snap.key);
+      renderMessage(snap.val(), snap.key);
+    }
   });
 
   setupTyping();
   setupVoice();
 }
 
-/* ================= RENDER MESSAGE ================= */
-function renderMessage(id, m) {
+/* ================= RENDER ================= */
+function renderMessage(m, id) {
   if (m.whisper && m.whisper !== myId && m.uid !== myId) return;
 
   const row = document.createElement("div");
-  row.className = "msg-row " + (m.uid === myId ? "mine" : "theirs");
-
-  let content = "";
+  row.className = m.uid === myId ? "msg mine" : "msg";
 
   if (m.type === "poll") {
-    content = `
-      <div class="poll-card">
-        <div style="font-size:11px;opacity:.6">Poll by ${m.user}</div>
-        <b style="display:block;margin:8px 0">📊 ${m.q}</b>
-        <div id="opts-${id}"></div>
+    row.innerHTML = `
+      <div class="poll">
+        <b>${m.q}</b>
+        <div id="poll-${id}"></div>
       </div>`;
-    setTimeout(() => watchPoll(id), 0);
-  } else if (m.audio) {
-    content = `<audio controls src="${m.audio}" class="bubble"></audio>`;
-  } else if (m.img) {
-    content = `<img src="${m.img}" class="bubble">`;
-  } else {
-    content = `
-      <div class="user-label">${m.user}</div>
-      <div class="bubble ${m.whisper ? "whisper-active" : ""}">
-        ${m.text}
-        <div style="font-size:10px;opacity:.5;margin-top:4px">
-          ${new Date(m.time).toLocaleTimeString()}
-          ${m.uid === myId ? ` • <span onclick="deleteMsg('${id}')" style="cursor:pointer">Delete</span>` : ""}
-        </div>
-      </div>`;
+    messagesBox.appendChild(row);
+    watchPoll(id);
+    return;
   }
 
-  row.innerHTML = content;
+  row.innerHTML = `
+    <div class="user">${m.user}</div>
+    ${m.text ? `<div class="bubble">${m.text}</div>` : ""}
+    ${m.audio ? `<audio controls src="${m.audio}"></audio>` : ""}
+    <div class="time">${new Date(m.time).toLocaleTimeString()}</div>
+  `;
+
   messagesBox.appendChild(row);
   messagesBox.scrollTop = messagesBox.scrollHeight;
 }
 
 /* ================= POLLS ================= */
 function watchPoll(id) {
-  const box = document.getElementById(`opts-${id}`);
-  if (!box) return;
-
-  onValue(ref(db, `messages/${id}`), snap => {
-    const data = snap.val();
-    if (!data) return;
-    box.innerHTML = renderPollOptions(id, data);
+  onValue(ref(db, "messages/" + id), snap => {
+    const m = snap.val();
+    if (!m) return;
+    const box = $("poll-" + id);
+    box.innerHTML = m.opts.map((o, i) => `
+      <button onclick="vote('${id}',${i})">${o}</button>
+    `).join("");
   });
 }
 
-function renderPollOptions(id, data) {
-  const votes = data.votes || {};
-  const total = Object.keys(votes).length;
+window.vote = (id, i) =>
+  set(ref(db, `messages/${id}/votes/${myId}`), i);
 
-  return data.opts.map((opt, i) => {
-    const count = Object.values(votes).filter(v => v === i).length;
-    const pct = total ? Math.round((count / total) * 100) : 0;
-    return `
-      <div class="poll-opt" onclick="vote('${id}',${i})">
-        <div class="poll-bar" style="width:${pct}%"></div>
-        <div class="poll-text">
-          <span>${opt}</span><span>${pct}%</span>
-        </div>
-      </div>`;
-  }).join("");
-}
+window.createPoll = () => {
+  const q = prompt("Poll question?");
+  if (!q) return;
 
-window.vote = (id, idx) =>
-  set(ref(db, `messages/${id}/votes/${myId}`), idx);
+  const opts = [];
+  while (true) {
+    const o = prompt("Add option (Cancel to stop)");
+    if (!o) break;
+    opts.push(o);
+  }
+  if (opts.length < 2) return alert("At least 2 options.");
+
+  push(ref(db, "messages"), {
+    type: "poll", q, opts, votes: {},
+    uid: myId, user: myUser, time: Date.now()
+  });
+};
 
 /* ================= SEND ================= */
 window.sendMessage = () => {
   if (!textInput.value.trim()) return;
-
   push(ref(db, "messages"), {
     text: textInput.value,
-    user: myUser,
     uid: myId,
-    whisper: whisperTo || null,
+    user: myUser,
+    whisper: whisperTo,
     time: Date.now()
   });
-
   textInput.value = "";
 };
 
-/* ================= DELETE ================= */
-window.deleteMsg = id => {
-  update(ref(db, "messages/" + id), {
-    text: "[MESSAGE DELETED]"
-  });
-};
-
-/* ================= TYPING INDICATOR ================= */
-function setupTyping() {
-  const typingRef = ref(db, "typing/" + myId);
-
-  textInput.addEventListener("input", () => {
-    set(typingRef, myUser);
-    setTimeout(() => remove(typingRef), 1500);
-  });
-
-  onValue(ref(db, "typing"), snap => {
-    const others = Object.values(snap.val() || {}).filter(n => n !== myUser);
-    statusDot.style.background = others.length ? "#eab308" : "#2ea043";
-  });
-}
-
 /* ================= WHISPER ================= */
 window.startWhisper = (id, name) => {
-  if (id === myId) return;
   whisperTo = id;
   whisperNotice.style.display = "flex";
-  targetName.innerText = name;
+  targetName.textContent = name;
 };
 
 window.cancelWhisper = () => {
@@ -360,16 +323,29 @@ window.cancelWhisper = () => {
   whisperNotice.style.display = "none";
 };
 
+/* ================= TYPING ================= */
+function setupTyping() {
+  const tRef = ref(db, "typing/" + myId);
+  textInput.addEventListener("input", () => {
+    set(tRef, myUser);
+    setTimeout(() => remove(tRef), 1200);
+  });
+
+  onValue(ref(db, "typing"), snap => {
+    const active = Object.values(snap.val() || {}).filter(n => n !== myUser);
+    statusDot.style.background = active.length ? "#eab308" : "#22c55e";
+  });
+}
+
 /* ================= VOICE ================= */
 function setupVoice() {
-  let recorder, chunks;
-
+  let rec, chunks;
   micBtn.onmousedown = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    recorder = new MediaRecorder(stream);
+    rec = new MediaRecorder(stream);
     chunks = [];
-    recorder.ondataavailable = e => chunks.push(e.data);
-    recorder.onstop = () => {
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = () => {
       const blob = new Blob(chunks, { type: "audio/webm" });
       const r = new FileReader();
       r.onload = () => push(ref(db, "messages"), {
@@ -377,22 +353,26 @@ function setupVoice() {
         uid: myId,
         user: myUser,
         time: Date.now(),
-        whisper: whisperTo || null
+        whisper: whisperTo
       });
       r.readAsDataURL(blob);
     };
-    recorder.start();
-    micBtn.classList.add("recording");
+    rec.start();
   };
-
-  micBtn.onmouseup = () => {
-    if (recorder && recorder.state !== "inactive") recorder.stop();
-    micBtn.classList.remove("recording");
-  };
+  micBtn.onmouseup = () => rec?.stop();
 }
+
+/* ================= SIDEBAR ================= */
+window.toggleSidebar = () => sidebar.classList.toggle("open");
+
+/* ================= WIPE ================= */
+window.wipeSystem = () => {
+  if (confirm("WIPE ALL MESSAGES?")) remove(ref(db, "messages"));
+};
 </script>
 </body>
 </html>
+
 
 
 
