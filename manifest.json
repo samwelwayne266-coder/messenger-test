@@ -1,0 +1,15 @@
+{
+  "name": "Wayne Core",
+  "short_name": "WayneCore",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#a855f7",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
