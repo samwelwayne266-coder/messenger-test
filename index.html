@@ -146,16 +146,14 @@
 </div>
 
 <script type="module">
-/* ================= IMPORTS ================= */
+/* ================= IMPORT FIREBASE ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getDatabase, ref, push, onChildAdded, onValue,
-  set, remove, onDisconnect, update
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onValue, set, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-/* ================= DOM SAFE ================= */
+/* ================= HELPER ================= */
 const $ = id => document.getElementById(id);
 
+/* ================= DOM ELEMENTS ================= */
 const splashScreen  = $("splash-screen");
 const loginOverlay  = $("login-overlay");
 const secretInput   = $("secret-code");
@@ -186,10 +184,11 @@ const db = getDatabase(app);
 /* ================= USER ================= */
 let myId = localStorage.getItem("wc_uid") || ("u_" + Math.random().toString(36).slice(2, 10));
 localStorage.setItem("wc_uid", myId);
-
 let myUser = localStorage.getItem("wc_user");
 let whisperTo = null;
 const rendered = new Set();
+const typingNodes = {};
+const messageQueue = [];
 
 /* ================= SPLASH ================= */
 window.onload = () => {
@@ -213,56 +212,58 @@ window.login = () => {
 
 /* ================= INIT ================= */
 function init() {
-  set(ref(db, "online/" + myId), { name: myUser });
+  set(ref(db, "online/" + myId), { name: myUser, avatar: "https://cdn-icons-png.flaticon.com/512/940/940193.png", role: "user", status: "online" });
   onDisconnect(ref(db, "online/" + myId)).remove();
 
+  setupUsers();
+  setupMessages();
+  setupTyping();
+  setupVoice();
+  setupOfflineQueue();
+}
+
+/* ================= USERS ================= */
+function setupUsers() {
   onValue(ref(db, "online"), snap => {
     const users = snap.val() || {};
     userList.innerHTML = Object.entries(users).map(([id, u]) => `
       <div onclick="startWhisper('${id}','${u.name}')">
-        🟢 ${u.name}${id === myId ? " (You)" : ""}
+        <img src="${u.avatar}" style="width:20px;height:20px;border-radius:50%;"> ${u.name} ${id===myId?"(You)":""} [${u.status}]
       </div>
     `).join("");
   });
+}
 
+/* ================= MESSAGES ================= */
+function setupMessages() {
   onChildAdded(ref(db, "messages"), snap => {
     if (!rendered.has(snap.key)) {
       rendered.add(snap.key);
       renderMessage(snap.val(), snap.key);
     }
   });
-
-  setupTyping();
-  setupVoice();
 }
 
-/* ================= RENDER ================= */
 function renderMessage(m, id) {
   if (m.whisper && m.whisper !== myId && m.uid !== myId) return;
 
   const row = document.createElement("div");
   row.className = m.uid === myId ? "msg mine" : "msg";
 
-  if (m.type === "poll") {
-    row.innerHTML = `
-      <div class="poll">
-        <b>${m.q}</b>
-        <div id="poll-${id}"></div>
-      </div>`;
-    messagesBox.appendChild(row);
-    watchPoll(id);
-    return;
-  }
-
-  row.innerHTML = `
-    <div class="user">${m.user}</div>
+  let bubble = `
     ${m.text ? `<div class="bubble">${m.text}</div>` : ""}
+    ${m.img ? `<img src="${m.img}" style="max-width:100%;border-radius:8px;">` : ""}
     ${m.audio ? `<audio controls src="${m.audio}"></audio>` : ""}
+    ${m.type === "poll" ? `<div class="poll"><b>${m.q}</b><div id="poll-${id}"></div></div>` : ""}
     <div class="time">${new Date(m.time).toLocaleTimeString()}</div>
   `;
 
+  row.innerHTML = `<div class="user" onclick="startWhisper('${m.uid}','${m.user}')">${m.user}</div>${bubble}`;
+
   messagesBox.appendChild(row);
   messagesBox.scrollTop = messagesBox.scrollHeight;
+
+  if (m.type === "poll") watchPoll(id);
 }
 
 /* ================= POLLS ================= */
@@ -272,13 +273,12 @@ function watchPoll(id) {
     if (!m) return;
     const box = $("poll-" + id);
     box.innerHTML = m.opts.map((o, i) => `
-      <button onclick="vote('${id}',${i})">${o}</button>
+      <button onclick="vote('${id}',${i})">${o} (${m.votes?Object.values(m.votes).filter(v=>v===i).length:0})</button>
     `).join("");
   });
 }
 
-window.vote = (id, i) =>
-  set(ref(db, `messages/${id}/votes/${myId}`), i);
+window.vote = (id, i) => set(ref(db, `messages/${id}/votes/${myId}`), i);
 
 window.createPoll = () => {
   const q = prompt("Poll question?");
@@ -301,14 +301,18 @@ window.createPoll = () => {
 /* ================= SEND ================= */
 window.sendMessage = () => {
   if (!textInput.value.trim()) return;
-  push(ref(db, "messages"), {
+  const msg = {
     text: textInput.value,
     uid: myId,
     user: myUser,
     whisper: whisperTo,
-    time: Date.now()
-  });
-  textInput.value = "";
+    time: Date.now(),
+    reactions: {},
+    delivered: false,
+    seen: false
+  };
+
+  push(ref(db, "messages"), msg).then(() => { textInput.value = ""; });
 };
 
 /* ================= WHISPER ================= */
@@ -367,11 +371,23 @@ window.toggleSidebar = () => sidebar.classList.toggle("open");
 
 /* ================= WIPE ================= */
 window.wipeSystem = () => {
-  if (confirm("WIPE ALL MESSAGES?")) remove(ref(db, "messages"));
+  if (prompt("ADMIN OVERRIDE:") === "WAYNE") remove(ref(db, "messages"));
 };
+
+/* ================= OFFLINE ================= */
+function setupOfflineQueue() {
+  // Queue messages if offline
+  window.addEventListener("offline", () => console.log("You are offline."));
+  window.addEventListener("online", () => {
+    while (messageQueue.length) {
+      push(ref(db, "messages"), messageQueue.shift());
+    }
+  });
+}
 </script>
 </body>
 </html>
+
 
 
 
