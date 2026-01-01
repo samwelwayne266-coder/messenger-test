@@ -146,14 +146,18 @@
 </div>
 
 <script type="module">
+/* ================= IMPORTS ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getDatabase, ref, push, onChildAdded,
-  onValue, set, remove, onDisconnect
+  getDatabase, ref, push, onChildAdded, onValue,
+  set, remove, onDisconnect, update
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import {
+  getAuth, signInAnonymously, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* ---------------- CONFIG ---------------- */
-const config = {
+/* ================= CONFIG ================= */
+const firebaseConfig = {
   apiKey: "AIzaSyBm_1W_5MRFJEOJZ4-6itgacgSon3DG-H0",
   authDomain: "supreme-chat-22cf4.firebaseapp.com",
   databaseURL: "https://supreme-chat-22cf4-default-rtdb.firebaseio.com",
@@ -163,266 +167,202 @@ const config = {
   appId: "1:475930341104:web:f3ee96117523bb914c5c35"
 };
 
-const app = initializeApp(config);
+const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
 
-/* ---------------- USER ID (STABLE) ---------------- */
+/* ================= USER ================= */
 let myId = localStorage.getItem("wc_uid");
 if (!myId) {
-  myId = "usr_" + Math.random().toString(36).slice(2, 10);
+  myId = "usr_" + crypto.randomUUID().slice(0, 8);
   localStorage.setItem("wc_uid", myId);
 }
-
 let myUser = localStorage.getItem("wc_user_final");
 let whisperTo = null;
-let mediaRecorder = null;
-let audioChunks = [];
-const renderedMessages = new Set();
+let rendered = new Set();
 
-/* ---------------- SPLASH ---------------- */
+/* ================= ENCRYPTION ================= */
+const SECRET = "WAYNE_CORE_ULTIMATE_KEY";
+
+async function encrypt(text) {
+  const enc = new TextEncoder().encode(text);
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(SECRET),
+    "AES-GCM", false, ["encrypt"]
+  );
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc);
+  return btoa(String.fromCharCode(...iv, ...new Uint8Array(cipher)));
+}
+
+async function decrypt(payload) {
+  try {
+    const data = Uint8Array.from(atob(payload), c => c.charCodeAt(0));
+    const iv = data.slice(0, 12);
+    const body = data.slice(12);
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(SECRET),
+      "AES-GCM", false, ["decrypt"]
+    );
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, body);
+    return new TextDecoder().decode(plain);
+  } catch {
+    return "[UNREADABLE]";
+  }
+}
+
+/* ================= SPLASH ================= */
 window.onload = () => {
   setTimeout(() => {
-    const splash = document.getElementById("splash-screen");
-    splash.style.opacity = "0";
+    document.getElementById("splash-screen").style.opacity = "0";
     setTimeout(() => {
-      splash.style.display = "none";
-      if (!myUser) {
-        document.getElementById("login-overlay").style.display = "flex";
-      } else {
-        initApp();
-      }
+      document.getElementById("splash-screen").remove();
+      if (!myUser) document.getElementById("login-overlay").style.display = "flex";
+      else init();
     }, 800);
   }, 2000);
 };
 
-/* ---------------- LOGIN ---------------- */
+/* ================= LOGIN ================= */
 window.login = () => {
-  const c = document.getElementById("secret-code").value;
-  const n = document.getElementById("username").value.trim();
+  const c = secret-code.value;
+  const n = username.value.trim();
   if (c === "WAYNE" && n) {
     localStorage.setItem("wc_user_final", n);
     location.reload();
   }
 };
 
-/* ---------------- INIT ---------------- */
-function initApp() {
-  set(ref(db, "online/" + myId), { name: myUser });
-  onDisconnect(ref(db, "online/" + myId)).remove();
+/* ================= INIT ================= */
+function init() {
+  signInAnonymously(auth);
 
-  onChildAdded(ref(db, "messages"), snap => {
-    if (renderedMessages.has(snap.key)) return;
-    renderedMessages.add(snap.key);
-    renderMsg(snap.key, snap.val());
-    const list = document.getElementById("messages");
-    list.scrollTop = list.scrollHeight;
+  onAuthStateChanged(auth, () => {
+    set(ref(db, "online/" + myId), { name: myUser });
+    onDisconnect(ref(db, "online/" + myId)).remove();
   });
 
+  /* USERS */
   onValue(ref(db, "online"), snap => {
-    const users = snap.val() || {};
-    document.getElementById("user-list").innerHTML =
-      Object.entries(users).map(([k, v]) => `
-        <div onclick="startWhisper('${k}', '${v.name}')"
-             style="padding:15px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;">
-          <span style="color:#2ea043;">●</span>
-          ${v.name} ${k === myId ? "(You)" : ""}
-        </div>
-      `).join("");
+    user-list.innerHTML = Object.entries(snap.val() || {}).map(([k, v]) =>
+      `<div onclick="startWhisper('${k}','${v.name}')">
+        <span style="color:#2ea043">●</span> ${v.name}${k===myId?" (You)":""}
+      </div>`
+    ).join("");
   });
 
+  /* MESSAGES */
+  onChildAdded(ref(db, "messages"), async snap => {
+    if (rendered.has(snap.key)) return;
+    rendered.add(snap.key);
+    renderMessage(snap.key, snap.val());
+  });
+
+  setupTyping();
   setupVoice();
-  document.getElementById("text-input").onkeydown = e => {
-    if (e.key === "Enter") sendMessage();
-  };
 }
 
-/* ---------------- RENDER MESSAGE ---------------- */
-function renderMsg(key, m) {
+/* ================= RENDER MESSAGE ================= */
+async function renderMessage(id, m) {
   if (m.whisper && m.whisper !== myId && m.uid !== myId) return;
 
-  const isMine = m.uid === myId;
-  const div = document.createElement("div");
-  div.className = `msg-row ${isMine ? "mine" : "theirs"}`;
+  const row = document.createElement("div");
+  row.className = "msg-row " + (m.uid === myId ? "mine" : "theirs");
 
-  let bubbleClass = `bubble ${m.whisper ? "whisper-active" : ""}`;
-  let content = "";
+  let text = m.text ? await decrypt(m.text) : "";
 
-  if (m.type === "poll") {
-    content = `
-      <div class="poll-card">
-        <div style="font-size:11px;opacity:.6">Poll by ${m.user}</div>
-        <b style="display:block;margin:8px 0">📊 ${m.q}</b>
-        <div id="opts-${key}"></div>
-      </div>`;
-    setTimeout(() => watchPoll(key), 0);
-  } else if (m.audio) {
-    content = `<div class="${bubbleClass}">
-      <audio controls src="${m.audio}" style="width:200px"></audio>
+  let content = `
+    ${m.user ? `<div class="user-label">${m.user}</div>` : ""}
+    <div class="bubble ${m.whisper ? "whisper-active" : ""}">
+      ${text || ""}
+      <div style="font-size:10px;opacity:.5;margin-top:4px">
+        ${new Date(m.time).toLocaleTimeString()}
+        ${m.uid === myId ? `<span onclick="deleteMsg('${id}')"> • Delete</span>` : ""}
+      </div>
     </div>`;
-  } else if (m.img) {
-    content = `<div class="${bubbleClass}">
-      <img src="${m.img}" style="max-width:100%;border-radius:10px">
-    </div>`;
-  } else {
-    content = `
-      <div class="user-label" onclick="startWhisper('${m.uid}','${m.user}')">${m.user}</div>
-      <div class="${bubbleClass}">${m.text}</div>`;
-  }
 
-  div.innerHTML = content;
-  document.getElementById("messages").appendChild(div);
+  if (m.img) content = `<img src="${m.img}" class="bubble">`;
+  if (m.audio) content = `<audio controls src="${m.audio}" class="bubble"></audio>`;
+
+  row.innerHTML = content;
+  messages.appendChild(row);
+  messages.scrollTop = messages.scrollHeight;
 }
 
-/* ---------------- POLLS (NO LEAKS) ---------------- */
-function watchPoll(key) {
-  const box = document.getElementById(`opts-${key}`);
-  if (!box) return;
-
-  onValue(ref(db, `messages/${key}`), snap => {
-    const data = snap.val();
-    if (!data) return;
-    box.innerHTML = renderPollOptions(key, data);
+/* ================= DELETE ================= */
+window.deleteMsg = id => {
+  update(ref(db, "messages/" + id), {
+    text: encrypt("[MESSAGE DELETED]")
   });
-}
+};
 
-function renderPollOptions(key, data) {
-  const votes = data.votes || {};
-  const total = Object.keys(votes).length;
-
-  return data.opts.map((opt, i) => {
-    const count = Object.values(votes).filter(v => v === i).length;
-    const pct = total ? Math.round((count / total) * 100) : 0;
-    return `
-      <div class="poll-opt" onclick="vote('${key}',${i})">
-        <div class="poll-bar" style="width:${pct}%"></div>
-        <div class="poll-text">
-          <span>${opt}</span><span>${pct}%</span>
-        </div>
-      </div>`;
-  }).join("");
-}
-
-window.vote = (key, idx) =>
-  set(ref(db, `messages/${key}/votes/${myId}`), idx);
-
-/* ---------------- SEND MESSAGE ---------------- */
-window.sendMessage = () => {
-  const input = document.getElementById("text-input");
-  if (!input.value.trim()) return;
+/* ================= SEND ================= */
+window.sendMessage = async () => {
+  if (!text-input.value.trim()) return;
 
   push(ref(db, "messages"), {
-    text: input.value,
-    user: myUser,
+    text: await encrypt(text-input.value),
     uid: myId,
-    whisper: whisperTo || null,
+    user: myUser,
+    whisper: whisperTo,
     time: Date.now()
   });
 
-  input.value = "";
+  text-input.value = "";
 };
 
-/* ---------------- WHISPER ---------------- */
+/* ================= TYPING INDICATOR (FIXED) ================= */
+function setupTyping() {
+  const typingRef = ref(db, "typing/" + myId);
+
+  text-input.addEventListener("input", () => {
+    set(typingRef, myUser);
+    setTimeout(() => remove(typingRef), 1500);
+  });
+
+  onValue(ref(db, "typing"), snap => {
+    const others = Object.values(snap.val() || {}).filter(n => n !== myUser);
+    status-dot.style.background = others.length ? "#eab308" : "#2ea043";
+  });
+}
+
+/* ================= WHISPER ================= */
 window.startWhisper = (id, name) => {
   if (id === myId) return;
   whisperTo = id;
-  document.getElementById("whisper-notice").style.display = "flex";
-  document.getElementById("target-name").innerText = name;
+  whisper-notice.style.display = "flex";
+  target-name.innerText = name;
 };
-
 window.cancelWhisper = () => {
   whisperTo = null;
-  document.getElementById("whisper-notice").style.display = "none";
+  whisper-notice.style.display = "none";
 };
 
-/* ---------------- POLL CREATE ---------------- */
-window.createPoll = () => {
-  const q = prompt("Question:");
-  const o = prompt("Options (comma separated):");
-  if (!q || !o) return;
-
-  push(ref(db, "messages"), {
-    type: "poll",
-    q,
-    opts: o.split(",").map(x => x.trim()),
-    uid: myId,
-    user: myUser,
-    votes: {},
-    time: Date.now()
-  });
-};
-
-/* ---------------- WIPE ---------------- */
-window.wipeSystem = () => {
-  if (prompt("ADMIN OVERRIDE:") === "WAYNE") {
-    remove(ref(db, "messages"));
-    renderedMessages.clear();
-    document.getElementById("messages").innerHTML = "";
-  }
-};
-
-/* ---------------- SIDEBAR ---------------- */
-window.toggleSidebar = () =>
-  document.getElementById("sidebar").classList.toggle("open");
-
-/* ---------------- IMAGE ---------------- */
-document.getElementById("img-in").onchange = e => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    push(ref(db, "messages"), {
-      img: reader.result,
-      user: myUser,
-      uid: myId,
-      whisper: whisperTo || null,
-      time: Date.now()
-    });
-  };
-  reader.readAsDataURL(file);
-};
-
-/* ---------------- VOICE ---------------- */
+/* ================= VOICE ================= */
 function setupVoice() {
-  const btn = document.getElementById("mic-btn");
-
-  const start = async () => {
+  mic-btn.onmousedown = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(audioChunks, { type: "audio/webm" });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        push(ref(db, "messages"), {
-          audio: reader.result,
-          user: myUser,
-          uid: myId,
-          whisper: whisperTo || null,
-          time: Date.now()
-        });
-      };
-      reader.readAsDataURL(blob);
+    recorder = new MediaRecorder(stream);
+    chunks = [];
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      const r = new FileReader();
+      r.onload = () => push(ref(db, "messages"), {
+        audio: r.result,
+        uid: myId,
+        user: myUser,
+        time: Date.now(),
+        whisper: whisperTo
+      });
+      r.readAsDataURL(blob);
     };
-
-    mediaRecorder.start();
-    btn.classList.add("recording");
+    recorder.start();
   };
-
-  const stop = () => {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
-    }
-    btn.classList.remove("recording");
-  };
-
-  btn.onmousedown = btn.ontouchstart = e => { e.preventDefault(); start(); };
-  btn.onmouseup = btn.ontouchend = stop;
+  mic-btn.onmouseup = () => recorder?.stop();
 }
 </script>
-
 </body>
 </html>
+
 
